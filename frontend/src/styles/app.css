@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Albert+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+/* ── Tokens GDA: suelo y agua como polos, luz de invernadero de fondo ── */
+:root {
+  --gda-mist: #EFF3EC;        /* fondo general */
+  --gda-card: #FFFFFF;
+  --gda-ink: #1F2A22;         /* texto principal (verde-negro, no slate) */
+  --gda-ink-soft: #5A6B5E;
+  --gda-hairline: #DCE5D8;
+  --gda-pine: #24382B;        /* sidebar / paneles de marca */
+  --gda-pine-deep: #1B2B21;
+  --gda-leaf: #3E7C4F;        /* estado sano / primario */
+  --gda-leaf-bright: #7FC98F; /* acento sobre fondos oscuros */
+  --gda-leaf-tint: #E4EFE3;
+  --gda-water: #2E7DA6;       /* riego / acciones de agua */
+  --gda-water-tint: #E2EFF6;
+  --gda-clay: #B0562F;        /* suelo seco / crítico */
+  --gda-clay-tint: #F6E9E1;
+  --gda-sun: #C9822B;         /* calor / advertencia */
+
+  --gda-font-display: 'Bricolage Grotesque', 'Albert Sans', sans-serif;
+  --gda-font-body: 'Albert Sans', 'Segoe UI', system-ui, sans-serif;
+  --gda-font-mono: 'IBM Plex Mono', 'Consolas', monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--gda-font-body);
+  background: var(--gda-mist);
+  color: var(--gda-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--gda-water);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Armonización de Quasar con los tokens ── */
+.q-btn {
+  font-family: var(--gda-font-body);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+.q-btn:not(.q-btn--round) { border-radius: 9px; }
+.q-notification { font-family: var(--gda-font-body); }
+.q-field__label, .q-field__native, .q-field__input { font-family: var(--gda-font-body); }
+.q-table { font-family: var(--gda-font-body); }
+.q-badge { font-family: var(--gda-font-body); font-weight: 600; }
+
+.app-loading-state,
+.app-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 44px 16px;
+  color: var(--gda-ink-soft);
+  font-size: 14px;
+}

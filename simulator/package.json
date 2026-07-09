@@ -1,0 +1,12 @@
+{
+  "name": "gda-node-simulator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "mqtt": "^5.5.0"
+  }
+}
