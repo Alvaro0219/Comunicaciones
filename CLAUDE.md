@@ -21,7 +21,7 @@ No hay tests ni linter configurados. La verificación estándar es: `npm run bui
 
 ## Arquitectura
 
-Monorepo de tres piezas: `backend/` (Node ESM + Express + Mongoose), `frontend/` (Vue 3 `<script setup>` + Quasar + Pinia + Vite), `simulator/` (cliente MQTT que imita al firmware ESP32). `docs/ESP32_CONNECTION_GUIDE.md` es el contrato público con el hardware — si se cambia el protocolo MQTT o el formato de mensajes, hay que actualizarlo.
+Monorepo de cuatro piezas: `backend/` (Node ESM + Express + Mongoose), `frontend/` (Vue 3 `<script setup>` + Quasar + Pinia + Vite), `simulator/` (cliente MQTT que imita al firmware) y `firmware/gda_node/` (sketch Arduino real para ESP32-WROOM-32 + FC-28 + AM2302 + relé; el usuario solo edita `config.h`). `docs/ESP32_CONNECTION_GUIDE.md` es el contrato público con el hardware y `docs/GUIA_HARDWARE_FIRMWARE.md` la guía práctica de cableado/carga — si se cambia el protocolo MQTT o el formato de mensajes, hay que actualizar contrato, firmware y simulador juntos.
 
 ### Flujo central (el "ciclo de riego")
 

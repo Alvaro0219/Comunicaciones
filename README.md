@@ -15,7 +15,8 @@ backend/   Node.js + Express + MongoDB (Atlas)
 frontend/  Vue 3 + Quasar + Pinia (dashboard en vivo, CRUD, historial)
 
 simulator/ Simulador de nodos ESP32 (mismo contrato MQTT, para probar sin hardware)
-docs/      Instructivo de conexión del ESP32 físico
+firmware/  Firmware Arduino del nodo real (ESP32 + FC-28 + AM2302 + relé)
+docs/      Guías de conexión del hardware físico
 ```
 
 ## Puesta en marcha (desarrollo)
@@ -51,7 +52,8 @@ node index.js --node maceta-01:EL_DEVICE_TOKEN --interval 15
 Flags útiles: `--interval <seg>` (ciclo acelerado; el real es 10 min), `--offline-chance 0.1` (simula cortes de conectividad con retransmisión), varios `--node` para múltiples macetas.
 
 ### 5. Conectar el ESP32 real
-Ver [docs/ESP32_CONNECTION_GUIDE.md](docs/ESP32_CONNECTION_GUIDE.md): configuración del firmware, contrato exacto de mensajes MQTT, verificación paso a paso y diagnóstico.
+- **[docs/GUIA_HARDWARE_FIRMWARE.md](docs/GUIA_HARDWARE_FIRMWARE.md)** — guía práctica paso a paso: cableado (FC-28, AM2302, relé), Arduino IDE, calibración y puesta en marcha. El firmware listo para cargar está en [firmware/gda_node/](firmware/gda_node/) (solo se edita `config.h`).
+- [docs/ESP32_CONNECTION_GUIDE.md](docs/ESP32_CONNECTION_GUIDE.md) — contrato MQTT de referencia (formato exacto de mensajes, topics, despliegue con Railway).
 
 ## Funcionalidad
 

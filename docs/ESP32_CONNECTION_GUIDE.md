@@ -2,6 +2,8 @@
 
 Este documento explica, paso a paso, cómo conectar un ESP32 físico (con sensor de humedad de suelo, sensor DHT de temperatura/humedad de aire y una bomba/válvula de riego) al sistema GDA ya desplegado.
 
+> **¿Tenés el hardware en la mano?** La guía práctica con el cableado exacto (FC-28 + AM2302 + relé 5V), la instalación del Arduino IDE, la calibración y el firmware completo listo para cargar está en [GUIA_HARDWARE_FIRMWARE.md](GUIA_HARDWARE_FIRMWARE.md). Este documento queda como **referencia del contrato de comunicación** (topics, formato de mensajes, despliegue).
+
 ---
 
 ## 1. Cómo se comunica el ESP32 con el sistema
