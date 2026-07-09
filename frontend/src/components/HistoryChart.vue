@@ -29,8 +29,8 @@ const chartData = computed(() => ({
     {
       label: 'Humedad suelo (%)',
       data: props.readings.map(r => r.soilMoisture),
-      borderColor: '#16a34a',
-      backgroundColor: 'rgba(22, 163, 74, 0.08)',
+      borderColor: '#3E7C4F', // --gda-leaf
+      backgroundColor: 'rgba(62, 124, 79, 0.09)',
       fill: true,
       tension: 0.3,
       pointRadius: 0,
@@ -39,7 +39,7 @@ const chartData = computed(() => ({
     {
       label: 'Temperatura (°C)',
       data: props.readings.map(r => r.temperature),
-      borderColor: '#f59e0b',
+      borderColor: '#C9822B', // --gda-sun
       tension: 0.3,
       pointRadius: 0,
       yAxisID: 'temp'
@@ -47,7 +47,7 @@ const chartData = computed(() => ({
     {
       label: 'Humedad aire (%)',
       data: props.readings.map(r => r.airHumidity),
-      borderColor: '#0ea5e9',
+      borderColor: '#2E7DA6', // --gda-water
       borderDash: [4, 4],
       tension: 0.3,
       pointRadius: 0,

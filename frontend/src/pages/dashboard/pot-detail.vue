@@ -56,6 +56,12 @@
                 </div>
               </div>
               <div v-else class="text-grey-6">Sin lecturas todavía.</div>
+              <MoistureBand
+                class="q-mt-lg"
+                :value="pot.lastReading?.soilMoisture ?? null"
+                :min="pot.minMoisture"
+                :max="pot.maxMoisture"
+              />
               <div v-if="pot.lastReading?.measuredAt" class="gda-last-update">
                 Última lectura: {{ fmtDate(pot.lastReading.measuredAt) }}
                 <q-badge v-if="pot.lastReading.source === 'replay'" color="orange" label="retransmitida" class="q-ml-xs" />
@@ -147,6 +153,7 @@ import { useRealtimeStream } from '../../composables/useRealtimeStream.js';
 import LoadingState from '../../components/LoadingState.vue';
 import HistoryChart from '../../components/HistoryChart.vue';
 import ForecastStrip from '../../components/ForecastStrip.vue';
+import MoistureBand from '../../components/MoistureBand.vue';
 
 const $q = useQuasar();
 const route = useRoute();
@@ -293,15 +300,17 @@ async function doIrrigate() {
 </script>
 
 <style scoped>
-.gda-card-title { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
 .gda-current { display: flex; gap: 32px; flex-wrap: wrap; }
-.gda-last-update { margin-top: 12px; font-size: 12px; color: #94a3b8; }
-.gda-cred { font-size: 13px; color: #475569; margin-bottom: 4px; }
+.gda-last-update { margin-top: 14px; font-size: 12px; color: var(--gda-ink-soft); }
+.gda-cred { font-size: 13px; color: var(--gda-ink-soft); margin-bottom: 5px; }
 .gda-cred code {
-  background: #f1f5f9;
+  font-family: var(--gda-font-mono);
+  background: var(--gda-mist);
+  border: 1px solid var(--gda-hairline);
+  color: var(--gda-ink);
   padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: 5px;
+  font-size: 11.5px;
   word-break: break-all;
 }
 .gda-history-head {

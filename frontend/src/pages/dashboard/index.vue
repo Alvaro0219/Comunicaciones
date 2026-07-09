@@ -57,7 +57,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useAuthStore } from '../../stores/auth.js';
-import { fetchAllPots, irrigatePot } from '../../services/api.js';
+import { fetchPots, irrigatePot } from '../../services/api.js';
 import { useRealtimeStream } from '../../composables/useRealtimeStream.js';
 import LoadingState from '../../components/LoadingState.vue';
 import PotCard from '../../components/PotCard.vue';
@@ -77,7 +77,8 @@ const irrigating = ref(false);
 async function reload() {
   loading.value = true;
   try {
-    pots.value = await fetchAllPots();
+    // El dashboard muestra solo macetas activas; la gestión completa vive en /pots
+    pots.value = (await fetchPots({ limit: 100, active: 'true' })).items || [];
   } catch (e) {
     $q.notify({ type: 'negative', message: e.message || 'No se pudieron cargar las macetas' });
   } finally {

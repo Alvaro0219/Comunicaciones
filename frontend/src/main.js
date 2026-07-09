@@ -3,9 +3,10 @@ import { Quasar, Notify } from 'quasar';
 import { createPinia } from 'pinia';
 import router from './router/index.js';
 import App from './App.vue';
-import 'quasar/dist/quasar.css';
+import 'quasar/src/css/index.sass';
 import '@quasar/extras/material-icons/material-icons.css';
 import './styles/app.css';
+import './styles/dashboard-unified.css';
 
 const app = createApp(App);
 app.use(Quasar, { plugins: { Notify } });

@@ -50,7 +50,9 @@ Para evitar ciclos de imports, `mqtt/broker.js` no importa services: recibe los 
 - Estado global solo en `stores/auth.js` (sesión en `localStorage` como `gda_session`, refresh automático en 401 vía interceptor). El estado de página vive en el componente.
 - Páginas CRUD usan `composables/useCrudResource.js` + `components/LoadingState.vue`; entidad nueva = función en `api.js` → página → ruta lazy en `router/index.js` (guard central con `meta.public`/`meta.roles`) → ítem de nav en `DashboardLayout.vue`.
 - Tiempo real: `composables/useRealtimeStream.js` abre SSE con token efímero (~60s, se renueva solo al reconectar). Eventos: `reading`, `event`, `alert`, `alert_resolved`, `pot_status`.
-- Prefijo CSS propio `gda-`; clases compartidas del layout en `styles/dashboard-unified.css`.
+- Prefijo CSS propio `gda-`; clases compartidas del layout en `styles/dashboard-unified.css` (importada globalmente en `main.js`, junto a `app.css` que define los design tokens `--gda-*` y las fuentes).
+- Identidad visual: tokens en `:root` de `app.css` (paleta suelo/agua: `--gda-leaf`, `--gda-water`, `--gda-clay`, `--gda-pine`…), tipografías Bricolage Grotesque (display) / Albert Sans (UI) / IBM Plex Mono (toda la telemetría). El componente firma es `MoistureBand.vue` (banda de umbrales min–max con marcador por zona). Chart.js no lee variables CSS: los hex de `HistoryChart.vue` deben mantenerse sincronizados con los tokens.
+- Gotcha Quasar: los colores de marca salen de `quasar-variables.sass`, que solo aplica si `main.js` importa `quasar/src/css/index.sass` (NO `quasar/dist/quasar.css`, que es precompilado) y `vite.config.js` pasa `sassVariables` como ruta absoluta (`fileURLToPath`).
 
 ### Puntos con estado implícito
 
