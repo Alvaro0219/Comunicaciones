@@ -67,9 +67,10 @@ export async function evaluateReading(pot, reading) {
     await resolveAlerts(pot, ['critica', 'preventiva', 'exceso_humedad']);
   }
 
-  // Regla de estrés por calor: temperatura alta + humedad baja (aunque no bajo el mínimo)
+  // Regla de estrés por calor: temperatura alta + humedad baja (aunque no bajo el mínimo).
+  // Solo aplica si el nodo reporta temperatura (el AM2302 puede no estar conectado aún).
   const soilIsLow = soil < pot.minMoisture + 10;
-  if (temp >= pot.heatTempThreshold && soilIsLow) {
+  if (temp != null && temp >= pot.heatTempThreshold && soilIsLow) {
     await raiseAlert(pot, 'calor_extremo',
       `Calor extremo (${temp}°C) con humedad baja (${soil}%) en "${pot.name}": riego breve preventivo`,
       { temperature: temp, soilMoisture: soil });
@@ -81,7 +82,7 @@ export async function evaluateReading(pot, reading) {
       reason: 'estres_por_calor',
       readingSnapshot: snapshot
     });
-  } else if (temp < pot.heatTempThreshold - 2) {
+  } else if (temp != null && temp < pot.heatTempThreshold - 2) {
     await resolveAlerts(pot, 'calor_extremo');
   }
 }

@@ -43,18 +43,22 @@
 
     <PotDialog v-model="showDialog" :pot="editing" :saving="saving" @save="handleSave" />
 
-    <!-- Credenciales del nodo tras crear -->
+    <!-- Identidad del nodo tras crear -->
     <q-dialog v-model="showCredentials" persistent>
-      <q-card style="width: 480px; max-width: 95vw">
+      <q-card style="width: 520px; max-width: 95vw">
         <q-card-section>
-          <div class="text-h6">Credenciales del nodo</div>
+          <div class="text-h6">Maceta registrada</div>
           <div class="text-caption text-grey-7">
-            Guardalas ahora: son las que va a usar el ESP32 para conectarse por MQTT.
+            El sistema va a procesar la telemetría que llegue al broker con este Node ID.
           </div>
         </q-card-section>
         <q-card-section class="q-gutter-y-sm">
-          <q-input :model-value="createdPot?.nodeId" label="Node ID (usuario MQTT)" dense outlined readonly />
-          <q-input :model-value="createdPot?.deviceToken" label="Device token (contraseña MQTT)" dense outlined readonly />
+          <q-input :model-value="createdPot?.nodeId" label="Node ID" dense outlined readonly />
+          <div class="text-caption text-grey-7">
+            Topic esperado: <code>{TOPIC_PREFIX}/{{ createdPot?.nodeId }}/telemetria</code> —
+            el nodo real usa <code>gda/prod</code>; en desarrollo, tu prefijo propio.
+            Las credenciales MQTT se gestionan en HiveMQ (documento interno del equipo).
+          </div>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn color="primary" label="Entendido" v-close-popup />

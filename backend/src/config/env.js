@@ -12,7 +12,18 @@ const schema = Joi.object({
   REFRESH_EXPIRES_IN: Joi.string().default('7d'),
   SSE_TOKEN_EXPIRES_IN: Joi.string().default('60s'),
   CORS_ORIGINS: Joi.string().allow('').default(''),
-  MQTT_PORT: Joi.number().default(1883),
+
+  // MQTT — broker en la nube (HiveMQ Cloud). El backend es CLIENTE del broker.
+  MQTT_HOST: Joi.string().allow('').default(''),
+  MQTT_PORT: Joi.number().default(8883),
+  MQTT_USER: Joi.string().allow('').default(''),
+  MQTT_PASS: Joi.string().allow('').default(''),
+  MQTT_CLIENT_ID: Joi.string().default('gda-backend-dev'),
+  TOPIC_PREFIX: Joi.string().default('gda/prod'),
+  // Guardia de escritura: false = evalúa y loguea pero no publica comandos.
+  // Solo el backend desplegado corre con true (regla del equipo).
+  MODO_ESCRITURA: Joi.boolean().default(false),
+
   RAIN_PROB_THRESHOLD: Joi.number().min(0).max(100).default(50),
   HEAT_TEMP_THRESHOLD: Joi.number().default(35),
   DEFAULT_IRRIGATION_SEC: Joi.number().min(1).default(5),
@@ -49,7 +60,15 @@ export const env = {
   refreshSecret: parsed.REFRESH_SECRET || 'change_me_refresh',
   refreshExpiresIn: parsed.REFRESH_EXPIRES_IN,
   sseTokenExpiresIn: parsed.SSE_TOKEN_EXPIRES_IN,
-  mqttPort: parsed.MQTT_PORT,
+  mqtt: {
+    host: parsed.MQTT_HOST,
+    port: parsed.MQTT_PORT,
+    user: parsed.MQTT_USER,
+    pass: parsed.MQTT_PASS,
+    clientId: parsed.MQTT_CLIENT_ID,
+    topicPrefix: parsed.TOPIC_PREFIX,
+    writeMode: parsed.MODO_ESCRITURA === true || parsed.MODO_ESCRITURA === 'true'
+  },
   rainProbThreshold: parsed.RAIN_PROB_THRESHOLD,
   heatTempThreshold: parsed.HEAT_TEMP_THRESHOLD,
   defaultIrrigationSec: parsed.DEFAULT_IRRIGATION_SEC,

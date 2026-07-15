@@ -70,11 +70,26 @@
           </div>
           <div class="col-12 col-md-4">
             <div class="gda-section-card">
-              <div class="gda-card-title">Credenciales del nodo</div>
+              <div class="gda-card-title">Nodo</div>
               <div class="gda-cred"><span>Node ID:</span> <code>{{ pot.nodeId }}</code></div>
-              <div class="gda-cred"><span>Token:</span> <code>{{ auth.canOperate ? pot.deviceToken : '••••••••' }}</code></div>
+              <template v-if="pot.diagnostics?.at">
+                <div class="gda-cred"><span>Red:</span> <code>{{ pot.diagnostics.ssid || '—' }}</code></div>
+                <div class="gda-cred">
+                  <span>IP (para OTA/Telnet):</span> <code>{{ pot.diagnostics.ip || '—' }}</code>
+                </div>
+                <div class="gda-cred">
+                  <span>Señal:</span>
+                  <code>{{ pot.diagnostics.rssi }} dBm</code>
+                  <q-badge
+                    :color="rssiQuality.color" :label="rssiQuality.label"
+                    class="q-ml-xs" outline
+                  />
+                </div>
+                <div class="gda-cred"><span>RAM libre:</span> <code>{{ formatHeap(pot.diagnostics.heap) }}</code></div>
+              </template>
               <div class="text-caption text-grey-6 q-mt-xs">
-                Usuario y contraseña MQTT del ESP32 (ver instructivo de conexión).
+                La autenticación MQTT del nodo se gestiona en el broker (HiveMQ) —
+                ver el documento interno del equipo.
               </div>
             </div>
           </div>
@@ -142,7 +157,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useAuthStore } from '../../stores/auth.js';
@@ -208,6 +223,20 @@ const alertColumns = [
 ];
 
 function round(v) { return v == null ? '–' : Math.round(v * 10) / 10; }
+
+// Interpretación del RSSI según la tabla del equipo (GDA Guia Setup)
+const rssiQuality = computed(() => {
+  const rssi = pot.value?.diagnostics?.rssi;
+  if (rssi == null) return { label: '—', color: 'grey' };
+  if (rssi >= -60) return { label: 'excelente', color: 'positive' };
+  if (rssi >= -70) return { label: 'buena', color: 'primary' };
+  if (rssi >= -80) return { label: 'justa', color: 'warning' };
+  return { label: 'muy débil', color: 'negative' };
+});
+
+function formatHeap(bytes) {
+  return bytes == null ? '—' : `${Math.round(bytes / 1024)} KB`;
+}
 function fmtDate(d) {
   return new Date(d).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
@@ -274,6 +303,7 @@ useRealtimeStream({
     if (data.online !== undefined) pot.value.online = data.online;
     if (data.watering !== undefined) pot.value.watering = data.watering;
     if (data.lastIrrigation !== undefined) pot.value.lastIrrigation = data.lastIrrigation;
+    if (data.diagnostics !== undefined) pot.value.diagnostics = data.diagnostics;
   },
   event(data) {
     if (String(data.potId) !== String(potId)) return;

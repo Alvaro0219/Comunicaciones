@@ -28,6 +28,15 @@ const PotSchema = new mongoose.Schema({
   // Estado de conectividad y última lectura (snapshot para el dashboard)
   online: { type: Boolean, default: false },
   lastSeenAt: { type: Date },
+  // Diagnóstico que publica el firmware en cada telemetría (rssi/ip/heap).
+  // La IP importa: es la que se usa para OTA/Telnet contra el nodo.
+  diagnostics: {
+    rssi: Number,
+    ssid: String,
+    ip: String,
+    heap: Number,
+    at: Date
+  },
   lastReading: {
     soilMoisture: Number,
     temperature: Number,

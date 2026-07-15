@@ -92,6 +92,12 @@ export const irrigatePot = asyncHandler(async (req, res) => {
     requestedBy: req.user.sub,
     reason: 'riego_manual_dashboard'
   });
+  if (result.skipped && result.reason === 'modo_lectura') {
+    throw new AppError(
+      'Este backend está en modo lectura (MODO_ESCRITURA=false): la decisión quedó registrada pero no se publicó la orden',
+      409, 'READ_ONLY'
+    );
+  }
   if (result.skipped) throw new AppError('Ya hay un riego en curso para esta maceta', 409, 'IRRIGATION_IN_PROGRESS');
 
   return ok(res, { command: result.command, event: result.event }, 202);

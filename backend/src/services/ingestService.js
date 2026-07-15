@@ -1,106 +1,122 @@
-import Joi from 'joi';
 import { Pot } from '../models/Pot.js';
 import { Reading } from '../models/Reading.js';
 import { broadcast } from '../realtime/sseHub.js';
 import { resolveAlerts } from './alertService.js';
 import { evaluateReading } from './decisionService.js';
 
-// Estructura mínima que debe tener un mensaje de telemetría MQTT
-const telemetrySchema = Joi.object({
-  soilMoisture: Joi.number().required(),
-  temperature: Joi.number().required(),
-  airHumidity: Joi.number().required(),
-  measuredAt: Joi.number().integer().required(), // epoch en segundos (NTP en el ESP32)
-  source: Joi.string().valid('live', 'replay').default('live')
-});
+// Ingesta de telemetría desde el broker en la nube.
+//
+// El firmware del nodo publica dos tipos de contenido en el mismo topic:
+//   - Diagnóstico (siempre): { maceta_id, rssi, ssid, ip, heap }
+//   - Lecturas de sensores (cuando estén conectados): { humedad, temp_ambiente, hum_ambiente }
+// El simulador ya envía las lecturas. Este módulo normaliza ambos contratos
+// (español del nodo / inglés legado) y decide qué hacer según lo que llegó.
 
-// Rangos físicamente posibles: fuera de esto la lectura se guarda marcada como inválida
-function rangeErrors({ soilMoisture, temperature, airHumidity }) {
+function normalizeTelemetry(raw) {
+  const soil = raw.humedad ?? raw.soilMoisture ?? null;
+  const temp = raw.temp_ambiente ?? raw.temperature ?? null;
+  const air = raw.hum_ambiente ?? raw.airHumidity ?? null;
+
+  // El firmware actual no manda timestamp: se usa la hora de recepción.
+  // Si el nodo algún día manda measuredAt (epoch s) — ej. replay offline — se respeta.
+  const measuredAt = Number.isFinite(raw.measuredAt) ? new Date(raw.measuredAt * 1000) : new Date();
+  const source = raw.source === 'replay' ? 'replay' : 'live';
+
+  const diagnostics = {};
+  if (raw.rssi !== undefined) diagnostics.rssi = raw.rssi;
+  if (raw.ssid !== undefined) diagnostics.ssid = raw.ssid;
+  if (raw.ip !== undefined) diagnostics.ip = raw.ip;
+  if (raw.heap !== undefined) diagnostics.heap = raw.heap;
+
+  return { soil, temp, air, measuredAt, source, diagnostics };
+}
+
+// Rangos físicamente posibles (solo se validan los campos presentes)
+function rangeErrors({ soil, temp, air }) {
   const errors = [];
-  if (soilMoisture < 0 || soilMoisture > 100) errors.push('humedad de suelo fuera de 0-100%');
-  if (airHumidity < 0 || airHumidity > 100) errors.push('humedad de aire fuera de 0-100%');
-  if (temperature < -40 || temperature > 80) errors.push('temperatura fuera de -40..80°C');
+  if (soil < 0 || soil > 100) errors.push('humedad de suelo fuera de 0-100%');
+  if (air != null && (air < 0 || air > 100)) errors.push('humedad de aire fuera de 0-100%');
+  if (temp != null && (temp < -40 || temp > 80)) errors.push('temperatura fuera de -40..80°C');
   return errors;
 }
 
 export async function handleTelemetry(nodeId, raw) {
   const pot = await Pot.findOne({ nodeId, isActive: true });
   if (!pot) {
-    console.warn(`Telemetría rechazada: nodo no registrado o inactivo (${nodeId})`);
+    console.warn(`Telemetría de nodo no registrado o inactivo: ${nodeId} (crear la maceta con ese nodeId)`);
     return;
   }
 
-  const { error, value } = telemetrySchema.validate(raw, { stripUnknown: true });
-  if (error) {
-    console.warn(`Telemetría malformada de ${nodeId}: ${error.message}`);
+  const t = normalizeTelemetry(raw);
+
+  // Cualquier mensaje del nodo cuenta como señal de vida
+  const potUpdate = { lastSeenAt: new Date(), online: true };
+  if (Object.keys(t.diagnostics).length > 0) {
+    potUpdate.diagnostics = { ...t.diagnostics, at: new Date() };
+  }
+
+  // Sin humedad de suelo => es un heartbeat de diagnóstico (rssi/ip/heap).
+  // Se refleja el estado del nodo pero no se registra lectura ni se decide riego.
+  if (t.soil == null || typeof t.soil !== 'number') {
+    await Pot.updateOne({ _id: pot._id }, potUpdate);
+    await resolveAlerts(pot, 'fallo_sensor');
+    broadcast('pot_status', {
+      potId: pot._id,
+      online: true,
+      diagnostics: potUpdate.diagnostics || pot.diagnostics
+    }, pot.ownerId);
     return;
   }
 
-  const errors = rangeErrors(value);
-  const measuredAt = new Date(value.measuredAt * 1000);
+  const errors = rangeErrors(t);
 
   let reading;
   try {
     reading = await Reading.create({
       potId: pot._id,
       nodeId,
-      soilMoisture: value.soilMoisture,
-      temperature: value.temperature,
-      airHumidity: value.airHumidity,
-      measuredAt,
-      source: value.source,
+      soilMoisture: t.soil,
+      temperature: t.temp,
+      airHumidity: t.air,
+      measuredAt: t.measuredAt,
+      source: t.source,
       status: errors.length ? 'invalida' : 'valida',
       invalidReason: errors.join('; ') || undefined
     });
   } catch (err) {
-    if (err.code === 11000) return; // retransmisión duplicada: ya la tenemos, no se duplica
+    if (err.code === 11000) return; // retransmisión duplicada: ya la tenemos
     throw err;
   }
 
-  // Actualizar snapshot de la maceta (solo si esta lectura es más nueva que la última)
-  const update = { lastSeenAt: new Date(), online: true };
-  const isNewer = !pot.lastReading?.measuredAt || measuredAt > pot.lastReading.measuredAt;
+  const isNewer = !pot.lastReading?.measuredAt || t.measuredAt > pot.lastReading.measuredAt;
   if (!errors.length && isNewer) {
-    update.lastReading = {
-      soilMoisture: value.soilMoisture,
-      temperature: value.temperature,
-      airHumidity: value.airHumidity,
-      measuredAt,
-      source: value.source
+    potUpdate.lastReading = {
+      soilMoisture: t.soil,
+      temperature: t.temp,
+      airHumidity: t.air,
+      measuredAt: t.measuredAt,
+      source: t.source
     };
   }
-  await Pot.updateOne({ _id: pot._id }, update);
+  await Pot.updateOne({ _id: pot._id }, potUpdate);
 
-  // El nodo volvió a reportar: si había alerta de fallo de sensor, se resuelve
   await resolveAlerts(pot, 'fallo_sensor');
 
   broadcast('reading', {
     potId: pot._id,
     potName: pot.name,
-    soilMoisture: value.soilMoisture,
-    temperature: value.temperature,
-    airHumidity: value.airHumidity,
-    measuredAt,
-    source: value.source,
+    soilMoisture: t.soil,
+    temperature: t.temp,
+    airHumidity: t.air,
+    measuredAt: t.measuredAt,
+    source: t.source,
     status: reading.status
   }, pot.ownerId);
 
-  // El motor de decisión solo corre sobre lecturas válidas y actuales (una lectura
-  // retransmitida de hace horas no debe disparar un riego hoy)
-  const isRecent = Date.now() - measuredAt.getTime() < 10 * 60 * 1000;
+  // El motor solo corre sobre lecturas válidas y actuales (una retransmisión
+  // vieja no debe disparar un riego hoy)
+  const isRecent = Date.now() - t.measuredAt.getTime() < 10 * 60 * 1000;
   if (!errors.length && isRecent) {
-    await evaluateReading(pot, value);
-  }
-}
-
-// Conexión/desconexión MQTT del nodo: refleja el estado online en la maceta y el dashboard
-export async function handleNodeStatus(nodeId, online) {
-  const pot = await Pot.findOneAndUpdate(
-    { nodeId },
-    { online, ...(online ? { lastSeenAt: new Date() } : {}) },
-    { new: true }
-  );
-  if (pot) {
-    broadcast('pot_status', { potId: pot._id, online }, pot.ownerId);
+    await evaluateReading(pot, { soilMoisture: t.soil, temperature: t.temp, airHumidity: t.air });
   }
 }

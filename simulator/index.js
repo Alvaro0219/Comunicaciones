@@ -1,12 +1,20 @@
-// Simulador de nodos ESP32 para el GDA.
-// Reproduce el contrato MQTT real (telemetry/command/ack), incluyendo el buffer
-// offline con retransmisión idempotente, para probar todo el sistema sin hardware.
+// Simulador del nodo GDA — habla el MISMO contrato que el firmware real de Tomás
+// contra el broker en la nube (HiveMQ). "Se seca solo, riega cuando le mandan la
+// orden, y confirma. El backend no distingue."
 //
-// Uso:
-//   node index.js --node <nodeId>:<deviceToken> [--node otro:token ...]
-//                 [--server mqtt://localhost:1883] [--interval 15] [--offline-chance 0]
+// Topics:  {prefix}/{nodo}/telemetria | comando | evento
+// Payload: { maceta_id, humedad, temp_ambiente, hum_ambiente, rssi, ip, heap }
+// Comando: { activar_riego: true, duracion_seg: 5, commandId? }
+// Evento:  { maceta_id, evento: "riego_exitoso", commandId? }
 //
-// Los nodeId/deviceToken salen de crear la maceta en el dashboard (diálogo de credenciales).
+// Uso (las credenciales salen del documento interno del equipo — el usuario
+// personal es Subscribe-only y NO sirve para simular: pedir/crear gda_sim_xxx):
+//
+//   node index.js --host <HIVEMQ_HOST> --user gda_sim_alvaro --pass <PASS> \
+//                 --prefix gda/dev-alvaro [--node nodo1] [--interval 5]
+//
+// Regla de equipo: usar SIEMPRE tu prefijo de desarrollo (gda/dev-xxx).
+// gda/prod es solo del nodo real.
 
 import mqtt from 'mqtt';
 
@@ -15,143 +23,90 @@ function getFlag(name, fallback = null) {
   const i = args.indexOf(`--${name}`);
   return i >= 0 ? args[i + 1] : fallback;
 }
-function getAllFlags(name) {
-  const out = [];
-  args.forEach((a, i) => { if (a === `--${name}`) out.push(args[i + 1]); });
-  return out;
+
+const HOST = getFlag('host');
+const PORT = Number(getFlag('port', 8883));
+const USER = getFlag('user');
+const PASS = getFlag('pass');
+const PREFIX = getFlag('prefix');
+const NODE = getFlag('node', 'nodo1');
+const INTERVAL_S = Number(getFlag('interval', 5));
+
+if (!HOST || !USER || !PASS || !PREFIX) {
+  console.error('Uso: node index.js --host <hivemq-host> --user <usuario> --pass <password> --prefix gda/dev-tunombre [--node nodo1] [--interval 5]');
+  console.error('Credenciales: documento interno del equipo (GDA Guia Setup). Tu usuario personal es');
+  console.error('Subscribe-only: para simular hace falta una credencial con publish (gda_sim_xxx).');
+  process.exit(1);
 }
-
-const SERVER = getFlag('server', 'mqtt://localhost:1883');
-const INTERVAL_SEC = Number(getFlag('interval', 15)); // ciclo real: 10 min; acelerado para demo
-const OFFLINE_CHANCE = Number(getFlag('offline-chance', 0)); // 0..1: prob. de simular un corte por ciclo
-
-const nodeSpecs = getAllFlags('node').map(spec => {
-  const [nodeId, token] = spec.split(':');
-  if (!nodeId || !token) {
-    console.error(`--node inválido: "${spec}" (formato esperado nodeId:deviceToken)`);
-    process.exit(1);
-  }
-  return { nodeId, token };
-});
-
-if (nodeSpecs.length === 0) {
-  console.error('Uso: node index.js --node <nodeId>:<deviceToken> [--node ...] [--server mqtt://host:1883] [--interval seg] [--offline-chance 0..1]');
+if (PREFIX === 'gda/prod') {
+  console.error('NO uses gda/prod: ese prefijo es solo del nodo real y del backend desplegado.');
   process.exit(1);
 }
 
-class SimulatedNode {
-  constructor({ nodeId, token }) {
-    this.nodeId = nodeId;
-    this.token = token;
-    this.soilMoisture = 55 + Math.random() * 15;
-    this.airHumidity = 50 + Math.random() * 20;
-    this.buffer = []; // lecturas acumuladas durante un corte simulado
-    this.offlineUntil = 0;
-    this.connect();
-  }
+const topicTelemetria = `${PREFIX}/${NODE}/telemetria`;
+const topicComando = `${PREFIX}/${NODE}/comando`;
+const topicEvento = `${PREFIX}/${NODE}/evento`;
 
-  log(msg) {
-    console.log(`[${this.nodeId}] ${msg}`);
-  }
+const client = mqtt.connect(`mqtts://${HOST}:${PORT}`, {
+  username: USER,
+  password: PASS,
+  clientId: `sim-${Math.random().toString(16).slice(2, 8)}`,
+  reconnectPeriod: 5000
+});
 
-  connect() {
-    this.client = mqtt.connect(SERVER, {
-      username: this.nodeId,
-      password: this.token,
-      clientId: this.nodeId,
-      reconnectPeriod: 3000,
-      clean: false
-    });
+let humedad = 40;
+let regando = false;
 
-    this.client.on('connect', () => {
-      this.log('conectado al broker');
-      this.client.subscribe(`gda/${this.nodeId}/command`, { qos: 1 });
-      this.flushBuffer();
-    });
+client.on('connect', () => {
+  console.log(`Simulador conectado a ${HOST} (nodo ${NODE}, prefijo ${PREFIX}, cada ${INTERVAL_S}s)`);
+  client.subscribe(topicComando, { qos: 1 });
 
-    this.client.on('message', (topic, payload) => {
-      try {
-        const cmd = JSON.parse(payload.toString());
-        this.handleCommand(cmd);
-      } catch (e) {
-        this.log(`comando ilegible: ${e.message}`);
-      }
-    });
+  setInterval(() => {
+    if (!regando) humedad -= Math.random() * 2; // se va secando
+    humedad = Math.max(0, humedad);
 
-    this.client.on('error', (err) => this.log(`error MQTT: ${err.message}`));
-
-    this.timer = setInterval(() => this.tick(), INTERVAL_SEC * 1000);
-  }
-
-  // Simulación física: el suelo se seca de a poco; temp con onda diaria + ruido
-  currentTemperature() {
-    const hour = new Date().getHours() + new Date().getMinutes() / 60;
-    const base = 22 + 8 * Math.sin(((hour - 9) / 24) * 2 * Math.PI);
-    return Math.round((base + (Math.random() * 2 - 1)) * 10) / 10;
-  }
-
-  takeReading() {
-    this.soilMoisture = Math.max(0, this.soilMoisture - (0.8 + Math.random() * 1.2));
-    this.airHumidity = Math.min(100, Math.max(10, this.airHumidity + (Math.random() * 6 - 3)));
-    return {
-      soilMoisture: Math.round(this.soilMoisture * 10) / 10,
-      temperature: this.currentTemperature(),
-      airHumidity: Math.round(this.airHumidity * 10) / 10,
-      measuredAt: Math.floor(Date.now() / 1000)
+    const hora = new Date().getHours();
+    const payload = {
+      maceta_id: 1,
+      humedad: +humedad.toFixed(1),
+      temp_ambiente: +(20 + 6 * Math.sin(((hora - 9) / 24) * 2 * Math.PI) + Math.random() * 2).toFixed(2),
+      hum_ambiente: +(50 + Math.random() * 20).toFixed(1),
+      // Diagnóstico, como el firmware real
+      rssi: -55 - Math.floor(Math.random() * 15),
+      ip: '192.168.0.99',
+      heap: 170000 + Math.floor(Math.random() * 10000)
     };
+    client.publish(topicTelemetria, JSON.stringify(payload), { qos: 1 });
+    console.log('TX', payload);
+  }, INTERVAL_S * 1000);
+});
+
+client.on('message', (topic, msg) => {
+  let cmd;
+  try {
+    cmd = JSON.parse(msg.toString());
+  } catch {
+    return;
   }
+  console.log('RX comando:', cmd);
 
-  tick() {
-    const reading = this.takeReading();
-    const isOffline = Date.now() < this.offlineUntil;
-
-    if (!isOffline && OFFLINE_CHANCE > 0 && Math.random() < OFFLINE_CHANCE) {
-      // Simular corte de conectividad por 3 ciclos: se acumulan lecturas en buffer
-      this.offlineUntil = Date.now() + 3 * INTERVAL_SEC * 1000;
-      this.log(`simulando corte de conectividad (${3 * INTERVAL_SEC}s)…`);
-    }
-
-    if (Date.now() < this.offlineUntil || !this.client.connected) {
-      this.buffer.push(reading);
-      this.log(`offline: lectura almacenada localmente (${this.buffer.length} en buffer)`);
-      return;
-    }
-
-    this.flushBuffer();
-    this.publishTelemetry({ ...reading, source: 'live' });
-    this.log(`telemetría enviada: suelo ${reading.soilMoisture}% | ${reading.temperature}°C | aire ${reading.airHumidity}%`);
-  }
-
-  flushBuffer() {
-    if (!this.client.connected || this.buffer.length === 0) return;
-    this.log(`retransmitiendo ${this.buffer.length} lectura(s) acumuladas…`);
-    for (const reading of this.buffer) {
-      this.publishTelemetry({ ...reading, source: 'replay' });
-    }
-    this.buffer = [];
-  }
-
-  publishTelemetry(payload) {
-    this.client.publish(`gda/${this.nodeId}/telemetry`, JSON.stringify(payload), { qos: 1 });
-  }
-
-  handleCommand(cmd) {
-    if (cmd.action !== 'regar') return;
-    this.log(`orden de riego recibida (${cmd.durationSec}s), regando…`);
+  if (cmd.activar_riego) {
+    regando = true;
+    console.log(`Regando ${cmd.duracion_seg}s...`);
     setTimeout(() => {
-      // El riego sube la humedad del suelo proporcionalmente a la duración
-      this.soilMoisture = Math.min(100, this.soilMoisture + cmd.durationSec * 3);
-      const ack = {
-        commandId: cmd.commandId,
-        ok: true,
-        executedDurationSec: cmd.durationSec,
-        detail: 'Riego ejecutado correctamente'
-      };
-      this.client.publish(`gda/${this.nodeId}/ack`, JSON.stringify(ack), { qos: 1 });
-      this.log(`riego completado, ack enviado (suelo ahora ${Math.round(this.soilMoisture)}%)`);
-    }, Math.min(cmd.durationSec, 10) * 1000);
+      humedad = Math.min(100, humedad + 30); // el riego sube la humedad
+      regando = false;
+      const evento = { maceta_id: 1, evento: 'riego_exitoso' };
+      if (cmd.commandId) evento.commandId = cmd.commandId;
+      client.publish(topicEvento, JSON.stringify(evento), { qos: 1 });
+      console.log(`Riego completado (humedad ahora ${humedad.toFixed(1)}%), evento publicado`);
+    }, (cmd.duracion_seg || 5) * 1000);
   }
-}
+});
 
-console.log(`Simulador GDA — servidor ${SERVER}, intervalo ${INTERVAL_SEC}s, ${nodeSpecs.length} nodo(s)`);
-nodeSpecs.forEach(spec => new SimulatedNode(spec));
+client.on('error', (err) => {
+  console.error('Error MQTT:', err.message);
+  if (String(err.message).includes('Not authorized')) {
+    console.error('La credencial no tiene permiso de publish en este prefijo (¿usuario Subscribe-only?).');
+  }
+});

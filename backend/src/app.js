@@ -7,9 +7,9 @@ import { connectDb } from './config/db.js';
 import routes from './routes/index.js';
 import { globalApiLimiter } from './middlewares/rateLimit.js';
 import { AppError } from './utils/AppError.js';
-import { startBroker } from './mqtt/broker.js';
+import { startMqtt } from './mqtt/client.js';
 import { startJobs } from './jobs/scheduler.js';
-import { handleTelemetry, handleNodeStatus } from './services/ingestService.js';
+import { handleTelemetry } from './services/ingestService.js';
 import { handleAck } from './services/irrigationService.js';
 
 const app = express();
@@ -70,12 +70,10 @@ async function startServer() {
       console.log(`API GDA escuchando en puerto ${env.port} (${env.nodeEnv})`);
     });
 
-    // Capa de ingesta ESP32: broker MQTT embebido con los handlers de dominio
-    startBroker({
-      port: env.mqttPort,
+    // Capa de ingesta: cliente MQTT contra el broker en la nube (HiveMQ)
+    startMqtt({
       onTelemetry: handleTelemetry,
-      onAck: handleAck,
-      onNodeStatus: handleNodeStatus
+      onEvent: handleAck
     });
 
     startJobs();
