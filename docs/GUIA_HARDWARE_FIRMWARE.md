@@ -3,6 +3,7 @@
 Esta guía explica cómo trabajar contra el sistema que ya está funcionando: el nodo ESP32 (lo tiene Tomás) publica su telemetría a **HiveMQ Cloud**, y cada integrante se conecta al broker desde su casa. Complementa dos documentos:
 
 - [ESP32_CONNECTION_GUIDE.md](ESP32_CONNECTION_GUIDE.md) — el contrato exacto de topics y mensajes.
+- [MAPA_DEL_SISTEMA.md](MAPA_DEL_SISTEMA.md) — referencia técnica completa: qué archivo y función procesa cada mensaje, de punta a punta.
 - **"GDA Guia Setup" (documento interno del equipo)** — hosts, usuarios y contraseñas. **Las credenciales no van en este repo.**
 
 ---

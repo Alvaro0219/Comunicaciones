@@ -56,7 +56,8 @@ node index.js --host <HIVEMQ_HOST> --user gda_sim_tunombre --pass <PASS> --prefi
 Mismo `TOPIC_PREFIX` que el backend. Flags: `--node nodo1` (default), `--interval 5` (segundos).
 
 ### 5. El nodo real y el equipo
-- **[docs/GUIA_HARDWARE_FIRMWARE.md](docs/GUIA_HARDWARE_FIRMWARE.md)** — guía práctica del equipo: MQTT Explorer, `.env` del backend, simulador, reglas (prefijos, client IDs, `MODO_ESCRITURA`), estado del nodo y diagnóstico.
+- **[docs/MAPA_DEL_SISTEMA.md](docs/MAPA_DEL_SISTEMA.md)** — referencia técnica completa: cómo se conecta cada pieza (ESP32, broker, backend, frontend), archivo por archivo y función por función.
+- [docs/GUIA_HARDWARE_FIRMWARE.md](docs/GUIA_HARDWARE_FIRMWARE.md) — guía práctica del equipo: MQTT Explorer, `.env` del backend, simulador, reglas (prefijos, client IDs, `MODO_ESCRITURA`), estado del nodo y diagnóstico.
 - [docs/ESP32_CONNECTION_GUIDE.md](docs/ESP32_CONNECTION_GUIDE.md) — contrato MQTT de referencia (topics, payloads, protecciones).
 - [firmware/gda-nodo/](firmware/gda-nodo/) — copia de referencia del firmware real (lo mantiene quien tiene el hardware; `secrets.h` nunca se commitea).
 

@@ -1,6 +1,6 @@
 # Contrato de comunicación — Nodo ESP32 ⇄ Broker en la nube ⇄ Backend GDA
 
-> **Referencia técnica del protocolo.** La guía práctica (MQTT Explorer, `.env` del backend, simulador, reglas del equipo) está en [GUIA_HARDWARE_FIRMWARE.md](GUIA_HARDWARE_FIRMWARE.md). Las credenciales reales viven en el documento interno del equipo ("GDA Guia Setup") y **nunca** en este repo.
+> **Referencia técnica del protocolo.** La guía práctica (MQTT Explorer, `.env` del backend, simulador, reglas del equipo) está en [GUIA_HARDWARE_FIRMWARE.md](GUIA_HARDWARE_FIRMWARE.md). Para ver qué archivo y función procesa cada mensaje, ver [MAPA_DEL_SISTEMA.md](MAPA_DEL_SISTEMA.md). Las credenciales reales viven en el documento interno del equipo ("GDA Guia Setup") y **nunca** en este repo.
 
 ## 1. Arquitectura
 
