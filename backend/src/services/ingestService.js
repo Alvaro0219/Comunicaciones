@@ -3,14 +3,19 @@ import { Reading } from '../models/Reading.js';
 import { broadcast } from '../realtime/sseHub.js';
 import { resolveAlerts } from './alertService.js';
 import { evaluateReading } from './decisionService.js';
+import { applyPumpState } from './irrigationService.js';
 
 // Ingesta de telemetría desde el broker en la nube.
 //
-// El firmware del nodo publica dos tipos de contenido en el mismo topic:
-//   - Diagnóstico (siempre): { maceta_id, rssi, ssid, ip, heap }
-//   - Lecturas de sensores (cuando estén conectados): { humedad, temp_ambiente, hum_ambiente }
-// El simulador ya envía las lecturas. Este módulo normaliza ambos contratos
-// (español del nodo / inglés legado) y decide qué hacer según lo que llegó.
+// El nodo real publica cada pocos segundos en {PREFIX}/{nodeId}/telemetria:
+//   { maceta_id, humedad, bomba, rssi, ssid, ip, heap }
+//   - humedad: % de suelo ya calibrado (0–100) — sensor FC-28
+//   - bomba:   estado actual del relé (true/false)
+//   - rssi/ssid/ip/heap: diagnóstico del nodo
+// temp_ambiente / hum_ambiente se suman cuando el AM2302 tenga código en el firmware;
+// hasta entonces llegan como null y el sistema los tolera.
+// Este módulo también acepta el contrato anterior en inglés (soilMoisture, etc.) que usa
+// el simulador, y decide qué hacer según lo que llegó.
 
 function normalizeTelemetry(raw) {
   const soil = raw.humedad ?? raw.soilMoisture ?? null;
@@ -22,13 +27,16 @@ function normalizeTelemetry(raw) {
   const measuredAt = Number.isFinite(raw.measuredAt) ? new Date(raw.measuredAt * 1000) : new Date();
   const source = raw.source === 'replay' ? 'replay' : 'live';
 
+  // Estado del relé; null si el nodo no lo informa (contrato anterior / simulador)
+  const pump = typeof raw.bomba === 'boolean' ? raw.bomba : null;
+
   const diagnostics = {};
   if (raw.rssi !== undefined) diagnostics.rssi = raw.rssi;
   if (raw.ssid !== undefined) diagnostics.ssid = raw.ssid;
   if (raw.ip !== undefined) diagnostics.ip = raw.ip;
   if (raw.heap !== undefined) diagnostics.heap = raw.heap;
 
-  return { soil, temp, air, measuredAt, source, diagnostics };
+  return { soil, temp, air, pump, measuredAt, source, diagnostics };
 }
 
 // Rangos físicamente posibles (solo se validan los campos presentes)
@@ -60,6 +68,7 @@ export async function handleTelemetry(nodeId, raw) {
   if (t.soil == null || typeof t.soil !== 'number') {
     await Pot.updateOne({ _id: pot._id }, potUpdate);
     await resolveAlerts(pot, 'fallo_sensor');
+    if (t.pump !== null) await applyPumpState(pot, { on: t.pump, via: 'telemetria' });
     broadcast('pot_status', {
       potId: pot._id,
       online: true,
@@ -101,6 +110,13 @@ export async function handleTelemetry(nodeId, raw) {
   await Pot.updateOne({ _id: pot._id }, potUpdate);
 
   await resolveAlerts(pot, 'fallo_sensor');
+
+  // El estado de la bomba que viaja en la telemetría es la red de seguridad del evento de
+  // bomba: si ese evento se perdió, acá se registra o se cierra un riego SIN orden del backend
+  // (via:'telemetria' nunca confirma una orden: eso lo hace solo el evento explícito).
+  if (t.pump !== null) {
+    await applyPumpState(pot, { on: t.pump, humedad: errors.length ? null : t.soil, via: 'telemetria' });
+  }
 
   broadcast('reading', {
     potId: pot._id,

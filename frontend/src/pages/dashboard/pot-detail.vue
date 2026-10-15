@@ -35,11 +35,11 @@
                   <span class="gda-metric-value">{{ round(pot.lastReading.soilMoisture) }}%</span>
                   <span class="gda-metric-label">Humedad suelo (umbral {{ pot.minMoisture }}–{{ pot.maxMoisture }}%)</span>
                 </div>
-                <div class="gda-metric">
+                <div v-if="pot.lastReading.temperature != null" class="gda-metric">
                   <span class="gda-metric-value">{{ round(pot.lastReading.temperature) }}°C</span>
                   <span class="gda-metric-label">Temperatura</span>
                 </div>
-                <div class="gda-metric">
+                <div v-if="pot.lastReading.airHumidity != null" class="gda-metric">
                   <span class="gda-metric-value">{{ round(pot.lastReading.airHumidity) }}%</span>
                   <span class="gda-metric-label">Humedad aire</span>
                 </div>

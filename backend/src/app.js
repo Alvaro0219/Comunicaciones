@@ -10,7 +10,7 @@ import { AppError } from './utils/AppError.js';
 import { startMqtt } from './mqtt/client.js';
 import { startJobs } from './jobs/scheduler.js';
 import { handleTelemetry } from './services/ingestService.js';
-import { handleAck } from './services/irrigationService.js';
+import { handleNodeEvent } from './services/irrigationService.js';
 
 const app = express();
 
@@ -73,7 +73,7 @@ async function startServer() {
     // Capa de ingesta: cliente MQTT contra el broker en la nube (HiveMQ)
     startMqtt({
       onTelemetry: handleTelemetry,
-      onEvent: handleAck
+      onEvent: handleNodeEvent
     });
 
     startJobs();

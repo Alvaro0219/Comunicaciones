@@ -23,6 +23,17 @@ const schema = Joi.object({
   // Guardia de escritura: false = evalúa y loguea pero no publica comandos.
   // Solo el backend desplegado corre con true (regla del equipo).
   MODO_ESCRITURA: Joi.boolean().default(false),
+  // Quién decide el riego. 'backend' (default, es el diseño del sistema): el nodo solo mide y
+  // ejecuta; el backend decide con los umbrales de la maceta + el pronóstico y manda las
+  // órdenes por MQTT. 'nodo' es solo un modo de compatibilidad con el sketch de PRUEBA del
+  // firmware (que riega solo con su regla local y no procesa comandos): el backend observa,
+  // registra y alerta, pero no emite órdenes.
+  CONTROL_RIEGO: Joi.string().valid('nodo', 'backend').default('backend'),
+  // Minutos mínimos entre dos riegos automáticos de una maceta, y entre dos registros de la
+  // misma decisión ("pospuesto", "no aplicado"). El suelo tarda minutos en reflejar el agua:
+  // sin esta espera, con la humedad todavía baja, se regaría en cada lectura. El riego manual
+  // no la respeta (es una decisión explícita del usuario). Coincide con el ciclo de diseño (10 min).
+  DECISION_COOLDOWN_MIN: Joi.number().min(0).default(10),
 
   RAIN_PROB_THRESHOLD: Joi.number().min(0).max(100).default(50),
   HEAT_TEMP_THRESHOLD: Joi.number().default(35),
@@ -69,6 +80,8 @@ export const env = {
     topicPrefix: parsed.TOPIC_PREFIX,
     writeMode: parsed.MODO_ESCRITURA === true || parsed.MODO_ESCRITURA === 'true'
   },
+  irrigationControl: parsed.CONTROL_RIEGO,
+  decisionCooldownMin: parsed.DECISION_COOLDOWN_MIN,
   rainProbThreshold: parsed.RAIN_PROB_THRESHOLD,
   heatTempThreshold: parsed.HEAT_TEMP_THRESHOLD,
   defaultIrrigationSec: parsed.DEFAULT_IRRIGATION_SEC,

@@ -53,7 +53,8 @@ const chartData = computed(() => ({
       pointRadius: 0,
       yAxisID: 'humidity'
     }
-  ]
+    // Una serie sin ningún dato (sensor AM2302 todavía sin conectar) no se dibuja ni ensucia la leyenda
+  ].filter(ds => ds.data.some(v => v != null))
 }));
 
 const chartOptions = {
@@ -62,7 +63,8 @@ const chartOptions = {
   interaction: { mode: 'index', intersect: false },
   scales: {
     humidity: { type: 'linear', position: 'left', min: 0, max: 100, title: { display: true, text: '%' } },
-    temp: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: '°C' } }
+    // display:'auto' oculta el eje derecho cuando no hay serie de temperatura
+    temp: { type: 'linear', position: 'right', display: 'auto', grid: { drawOnChartArea: false }, title: { display: true, text: '°C' } }
   },
   plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
 };

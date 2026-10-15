@@ -3,9 +3,9 @@
 // conectan a él desde donde estén — no hace falta compartir red.
 //
 // Contrato de topics (definido por el firmware del nodo, ver GDA Guia Setup):
-//   {PREFIX}/{nodeId}/telemetria   nodo -> broker   lecturas + diagnóstico (rssi, ip, heap)
+//   {PREFIX}/{nodeId}/telemetria   nodo -> broker   {maceta_id, humedad, bomba, rssi, ssid, ip, heap}
 //   {PREFIX}/{nodeId}/comando      backend -> nodo  {"activar_riego":true,"duracion_seg":5}
-//   {PREFIX}/{nodeId}/evento       nodo -> broker   confirmación de riego ejecutado
+//   {PREFIX}/{nodeId}/evento       nodo -> broker   {maceta_id, bomba, humedad, motivo} en cada cambio de la bomba
 //
 // Reglas de equipo que este módulo respeta:
 //   - MQTT_CLIENT_ID único por persona (dos backends con el mismo ID se patean mutuamente).
@@ -18,6 +18,16 @@ import mqttLib from 'mqtt';
 import { env } from '../config/env.js';
 
 let client = null;
+
+// Los mensajes de un mismo nodo se procesan en orden y de a uno. El evento de bomba y la
+// telemetría pueden llegar casi juntos y ambos tocan el estado de riego de la maceta:
+// en paralelo podrían registrar el mismo riego dos veces.
+const queues = new Map();
+function enqueue(nodeId, topic, task) {
+  const previous = queues.get(nodeId) || Promise.resolve();
+  const next = previous.then(task).catch((err) => console.error(`Error procesando ${topic}:`, err));
+  queues.set(nodeId, next);
+}
 
 export function isWriteMode() {
   return env.mqtt.writeMode;
@@ -49,7 +59,7 @@ export function startMqtt({ onTelemetry, onEvent }) {
     console.error('Error MQTT:', err.message);
   });
 
-  client.on('message', async (topic, buf) => {
+  client.on('message', (topic, buf) => {
     if (!topic.startsWith(`${prefix}/`)) return;
     const [nodeId, channel] = topic.slice(prefix.length + 1).split('/');
     if (!nodeId || !channel) return;
@@ -62,12 +72,10 @@ export function startMqtt({ onTelemetry, onEvent }) {
       return;
     }
 
-    try {
+    enqueue(nodeId, topic, async () => {
       if (channel === 'telemetria') await onTelemetry(nodeId, payload);
       else if (channel === 'evento') await onEvent(nodeId, payload);
-    } catch (err) {
-      console.error(`Error procesando ${topic}:`, err);
-    }
+    });
   });
 
   return client;

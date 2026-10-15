@@ -92,6 +92,12 @@ export const irrigatePot = asyncHandler(async (req, res) => {
     requestedBy: req.user.sub,
     reason: 'riego_manual_dashboard'
   });
+  if (result.skipped && result.reason === 'nodo_autonomo') {
+    throw new AppError(
+      'El nodo riega de forma autónoma con su regla local y todavía no procesa comandos remotos: el riego manual no está disponible',
+      409, 'NODE_NO_COMMANDS'
+    );
+  }
   if (result.skipped && result.reason === 'modo_lectura') {
     throw new AppError(
       'Este backend está en modo lectura (MODO_ESCRITURA=false): la decisión quedó registrada pero no se publicó la orden',

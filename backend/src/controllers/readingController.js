@@ -32,17 +32,37 @@ export const listReadings = asyncHandler(async (req, res) => {
   return ok(res, buildPaginatedResponse(items, total, { page, limit }));
 });
 
-// Últimas N horas (default 24) para el gráfico del dashboard — sin paginar
+// Últimas N horas (default 24) para el gráfico del dashboard — sin paginar.
+// El nodo reporta cada pocos segundos (miles de lecturas por día): se promedian por intervalo
+// para devolver unos 300 puntos sin importar la cadencia. Con un simple .limit() el gráfico
+// mostraría las lecturas más viejas de la ventana y dejaría de reflejar lo reciente.
 export const recentReadings = asyncHandler(async (req, res) => {
   const pot = await assertPotAccess(req);
   const hours = Math.min(parseInt(req.query.hours, 10) || 24, 168);
   const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+  const binMinutes = Math.max(1, Math.ceil((hours * 60) / 300));
 
-  const items = await Reading.find({
-    potId: pot._id,
-    status: 'valida',
-    measuredAt: { $gte: since }
-  }).sort({ measuredAt: 1 }).limit(2000).lean();
+  const items = await Reading.aggregate([
+    { $match: { potId: pot._id, status: 'valida', measuredAt: { $gte: since } } },
+    {
+      $group: {
+        _id: { $dateTrunc: { date: '$measuredAt', unit: 'minute', binSize: binMinutes } },
+        soilMoisture: { $avg: '$soilMoisture' },
+        temperature: { $avg: '$temperature' },
+        airHumidity: { $avg: '$airHumidity' }
+      }
+    },
+    { $sort: { _id: 1 } },
+    {
+      $project: {
+        _id: 0,
+        measuredAt: '$_id',
+        soilMoisture: { $round: ['$soilMoisture', 1] },
+        temperature: { $round: ['$temperature', 1] },
+        airHumidity: { $round: ['$airHumidity', 1] }
+      }
+    }
+  ]);
 
   return ok(res, items);
 });

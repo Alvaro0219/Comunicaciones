@@ -1,6 +1,6 @@
 # Mapa del sistema — cómo se conecta todo (hardware, broker, backend, frontend)
 
-> Documento de referencia técnica: recorre **cada pieza real** del sistema (archivo por archivo, función por función) y cómo se conectan entre sí. Para guías de uso día a día ver [GUIA_HARDWARE_FIRMWARE.md](GUIA_HARDWARE_FIRMWARE.md) (equipo) y [ESP32_CONNECTION_GUIDE.md](ESP32_CONNECTION_GUIDE.md) (contrato de mensajes). Las credenciales reales están en el documento interno "GDA Guia Setup" — acá no se repiten.
+> Documento de referencia técnica: recorre **cada pieza real** del sistema (archivo por archivo, función por función) y cómo se conectan entre sí. Se referencia por **nombre de función** y no por número de línea, para que no envejezca con cada edición. Para guías de uso día a día ver [GUIA_HARDWARE_FIRMWARE.md](GUIA_HARDWARE_FIRMWARE.md) (equipo) y [ESP32_CONNECTION_GUIDE.md](ESP32_CONNECTION_GUIDE.md) (contrato de mensajes). La documentación del nodo físico (cableado, calibración) está en [GDA_Documentacion_Nodo1.md](GDA_Documentacion_Nodo1.md). Las credenciales reales están en el documento interno "GDA Guia Setup" — acá no se repiten.
 
 ---
 
@@ -25,17 +25,27 @@
                                                                         └──────────────────┘
 ```
 
-Cinco piezas, cinco "idiomas" distintos de conexión:
+Cinco tramos, cinco "idiomas" distintos de conexión:
 
-| # |       Tramo       |            Protocolo         | Quién inicia la conexión |
-|---|------------------ |------------------------------|------------------------------------------------|
-| 1 | ESP32 ⇄ HiveMQ   | MQTT sobre TLS (puerto 8883) | El ESP32 (y el backend) se conectan *al* broker |
+| # | Tramo | Protocolo | Quién inicia la conexión |
+|---|---|---|---|
+| 1 | ESP32 ⇄ HiveMQ | MQTT sobre TLS (puerto 8883) | El ESP32 (y el backend) se conectan *al* broker |
 | 2 | Backend ⇄ HiveMQ | MQTT sobre TLS (puerto 8883) | El backend, como cliente |
 | 3 | Backend ⇄ MongoDB | Mongoose (driver de MongoDB) | El backend |
 | 4 | Frontend ⇄ Backend (comandos) | HTTP/REST (`/api/...`) | El navegador |
 | 5 | Frontend ⇄ Backend (tiempo real) | SSE (Server-Sent Events, `/api/stream`) | El navegador |
 
 Ninguna de estas conexiones pasa por las otras piezas — no hay, por ejemplo, una conexión directa entre el ESP32 y el frontend. Todo pasa por el backend, que es el único que le habla a las cinco piezas.
+
+### La decisión de diseño que atraviesa todo: el nodo mide y ejecuta, el backend decide
+
+```
+ESP32 mide ─► telemetría ─► broker ─► backend decide ─► orden ─► broker ─► ESP32 ejecuta ─► evento ─► backend confirma
+                                      (umbrales + pronóstico,
+                                       o el botón "Regar ahora")
+```
+
+El firmware **no tiene reglas de riego**: publica la humedad y obedece órdenes (`activar_riego` durante `duracion_seg`). El backend compara cada lectura con los umbrales de la maceta y el pronóstico, y manda la orden; también la puede mandar el botón "Regar ahora". Se controla con `CONTROL_RIEGO` (`backend` por defecto). El valor `nodo` existe solo como compatibilidad con el sketch de **prueba** del firmware (que riega solo con una regla local de 50–55 % y no procesa comandos); no se usa con el firmware del diseño. Detalle en [ESP32_CONNECTION_GUIDE.md](ESP32_CONNECTION_GUIDE.md), sección 4.
 
 ---
 
@@ -51,35 +61,39 @@ Con `{PREFIX}` = `gda/prod` (nodo real) o `gda/dev-tunombre` (desarrollo):
 
 | Topic | Quién publica | Quién se suscribe | Contenido |
 |---|---|---|---|
-| `{PREFIX}/{nodeId}/telemetria` | ESP32 | Backend | Lecturas + diagnóstico |
-| `{PREFIX}/{nodeId}/comando` | Backend | ESP32 | Orden de riego |
-| `{PREFIX}/{nodeId}/evento` | ESP32 | Backend | Confirmación de riego |
+| `{PREFIX}/{nodeId}/telemetria` | ESP32 | Backend | `{maceta_id, humedad, bomba, rssi, ssid, ip, heap}` cada 30 s |
+| `{PREFIX}/{nodeId}/comando` | Backend | ESP32 | `{activar_riego, duracion_seg, commandId}` |
+| `{PREFIX}/{nodeId}/evento` | ESP32 | Backend | `{maceta_id, bomba, humedad, motivo, duracion_seg, commandId}` en cada cambio de la bomba |
 
-### Del lado del ESP32 — [`firmware/gda-nodo/gda-nodo.ino`](../firmware/gda-nodo/gda-nodo.ino)
+### Del lado del ESP32 — [`firmware/gda-nodo-v2/gda-nodo-v2.ino`](../firmware/gda-nodo-v2/gda-nodo-v2.ino)
 
-Lo que hace este archivo, en orden de ejecución:
+Qué hace este archivo, por función:
 
-1. **`setup()`** (línea 124): conecta WiFi (`conectarWiFi()`, con `WiFiMulti` probando 3 redes precargadas desde `secrets.h`), arranca OTA y Telnet, y arma los tres nombres de topic con `snprintf` (líneas 151-153) usando `PREFIX` y `NODO_ID` (constantes en las líneas 24 y 26).
-2. **`net.setCACert(CA_CERT)`** (línea 155): carga el certificado de la autoridad certificadora (Let's Encrypt) para que la conexión TLS a HiveMQ sea válida. Sin esto, la conexión falla con `rc=-2`.
-3. **`reconectarMQTT()`** (línea 106): hace `mqtt.connect(cid, MQTT_USER, MQTT_PASS)` — este es el login: usuario y contraseña son la credencial de HiveMQ del nodo (`gda_nodo1`, en `secrets.h`, nunca en este `.ino`). Si conecta, hace `mqtt.subscribe(topic_comando)` — a partir de acá, cualquier mensaje que el backend publique en `.../comando` dispara `onMessage()` (línea 100).
-4. **`loop()`** (línea 162): cada 5 segundos arma un JSON a mano (líneas 190-194: `maceta_id`, `rssi`, `ssid`, `ip`, `heap`) y lo publica en `topic_telemetria` con `mqtt.publish()`. **Este es el estado actual**: el JSON todavía no incluye `humedad` — Tomás está por sumarlo cuando conecte el sensor de humedad de suelo.
+1. **`setup()`**: fija el relé apagado *antes* de configurarlo como salida (para que no haya un pulso al arrancar), configura el ADC, conecta WiFi con `WiFiMulti` (3 redes desde `secrets.h`), arranca OTA (cuyo `onStart` apaga el relé) y Telnet, arma los nombres de topic con `snprintf` a partir de `PREFIX` y `NODO_ID`, y carga el certificado raíz con `net.setCACert(CA_CERT)` (sin él la conexión TLS a HiveMQ falla con `rc=-2`).
+2. **`publicarTelemetria()`** (desde `loop()`, la primera apenas conecta y luego cada `TELEMETRIA_MS`): llama a `leerHumedadSuelo()` — promedio de 10 muestras del FC-28 en GPIO 34, convertido a 0–100 % con `SUELO_SECO`/`SUELO_MOJADO` (rango invertido: más crudo = más seco) — y publica el JSON con `humedad`, `bomba` (estado del relé), `rssi`, `ssid`, `ip` y `heap`. El AM2302 está cableado pero sin código, por eso no hay `temp_ambiente` ni `hum_ambiente`.
+3. **`reconectarMQTT()`**: un intento cada 5 s, sin bloquear. `mqtt.connect(cid, MQTT_USER, MQTT_PASS)` es el login (credencial `gda_nodo1`, en `secrets.h`, nunca en el `.ino`) con **sesión limpia**: una orden publicada mientras el nodo estaba desconectado no se le entrega al volver. Si conecta, `mqtt.subscribe(topic_comando, 1)`.
+4. **`onMessage()`**: callback de `.../comando`. Parsea el JSON con ArduinoJson y llama a `iniciarRiego(duracion_seg, commandId)`, o a `detenerRiego("orden de detencion")` si llega `activar_riego:false` (parada de emergencia).
+5. **`iniciarRiego()`**: acota la duración a `DURACION_MAX_S` (120 s), ignora la orden si ya hay un riego en curso, mide la humedad, enciende el relé con `escribirRele(true)`, guarda `tBombaFin = millis() + duración` y publica el evento `bomba:true` (con el `commandId`).
+6. **`servicioBomba()`**, **la primera línea de cada vuelta del `loop()` y sin depender de la red**: si venció `tBombaFin`, llama a `detenerRiego("fin de riego")`, que **apaga el relé primero**, mide la humedad y publica el evento `bomba:false` con la `duracion_seg` real y el `commandId`. El apagado lo decide el tiempo medido en el propio nodo: si se cae el WiFi o el broker durante el riego, la bomba igual se apaga. Si no hay MQTT en ese momento, `publicarEvento()` deja el evento en `eventoPendiente` y `loop()` lo reenvía al reconectar.
 
 ### Del lado del backend — [`backend/src/mqtt/client.js`](../backend/src/mqtt/client.js)
 
 Este archivo es el espejo del `.ino` del lado servidor:
 
-1. **`startMqtt({ onTelemetry, onEvent })`** (línea 26): llama a `mqttLib.connect()` con `mqtts://${MQTT_HOST}:${MQTT_PORT}` y las credenciales que vienen de `config/env.js` (ver sección 4). Nótese que recibe los handlers **por parámetro** en vez de importar los services directamente — esto evita un ciclo de imports, porque `irrigationService.js` necesita importar *este mismo archivo* para publicar comandos.
-2. Al conectar (evento `'connect'`, línea 42), se suscribe a **dos** wildcards: `{prefix}/+/telemetria` y `{prefix}/+/evento` — el `+` es un comodín MQTT que matchea cualquier `nodeId`, así el backend escucha todos los nodos del prefijo con una sola suscripción.
-3. En cada mensaje (evento `'message'`, línea 52): parsea el topic para extraer `nodeId` y `channel` (línea 54: `topic.slice(prefix.length + 1).split('/')`), parsea el JSON del payload, y llama a `onTelemetry(nodeId, payload)` o `onEvent(nodeId, payload)` según el canal.
-4. **`publishCommand(nodeId, payload)`** (línea 78): la única función que *escribe* al broker. Antes de publicar, chequea `env.mqtt.writeMode` — si es `false` (modo lectura), solo loguea y no publica nada. Esta es la guardia de equipo contra activar la bomba por accidente.
+1. **`startMqtt({ onTelemetry, onEvent })`**: llama a `mqttLib.connect()` con `mqtts://${MQTT_HOST}:${MQTT_PORT}` y las credenciales de `config/env.js` (sección 4). Recibe los handlers **por parámetro** en vez de importar los services — evita un ciclo de imports, porque `irrigationService.js` importa *este mismo archivo* para publicar comandos.
+2. Al conectar se suscribe a dos comodines: `{prefix}/+/telemetria` y `{prefix}/+/evento`. El `+` matchea cualquier `nodeId`, así una sola suscripción escucha todos los nodos del prefijo.
+3. En cada mensaje extrae `nodeId` y canal del topic (`topic.slice(prefix.length + 1).split('/')`), parsea el JSON y lo mete en una cola con **`enqueue(nodeId, ...)`**. La cola procesa los mensajes **de un mismo nodo en orden y de a uno**: el evento de bomba y la telemetría pueden llegar casi juntos y ambos tocan el estado de riego; en paralelo podrían registrar el mismo riego dos veces.
+4. **`publishCommand(nodeId, payload)`**: la única función que *escribe* al broker. Si `MODO_ESCRITURA` es `false` solo loguea y no publica. Es la guardia de equipo contra activar la bomba por accidente. Además, publicar exige que la credencial tenga permiso de **Publish** en HiveMQ: las cuentas personales (*Subscribe only*) no pueden.
 
 ### Quién conecta estas dos partes: `app.js`
 
-En [`backend/src/app.js`](../backend/src/app.js) (línea 74), `startServer()` llama:
+En [`backend/src/app.js`](../backend/src/app.js), `startServer()` llama:
+
 ```js
-startMqtt({ onTelemetry: handleTelemetry, onEvent: handleAck });
+startMqtt({ onTelemetry: handleTelemetry, onEvent: handleNodeEvent });
 ```
-`handleTelemetry` está en `services/ingestService.js` y `handleAck` en `services/irrigationService.js` — son los que efectivamente *hacen algo* con cada mensaje (ver sección 3). `startMqtt` es solo el cartero; no sabe nada de umbrales de riego ni de Mongo.
+
+`handleTelemetry` está en `services/ingestService.js` y `handleNodeEvent` en `services/irrigationService.js`: son los que *hacen algo* con cada mensaje (sección 3). `startMqtt` es solo el cartero; no sabe nada de umbrales ni de Mongo.
 
 ---
 
@@ -87,59 +101,77 @@ startMqtt({ onTelemetry: handleTelemetry, onEvent: handleAck });
 
 ### 3.1 Telemetría → [`services/ingestService.js`](../backend/src/services/ingestService.js)
 
-`handleTelemetry(nodeId, raw)` (línea 43) es la función que se ejecuta por cada mensaje en `.../telemetria`. Paso a paso:
+`handleTelemetry(nodeId, raw)` se ejecuta por cada mensaje en `.../telemetria`:
 
-1. **Busca la maceta** por `nodeId` (línea 44: `Pot.findOne({ nodeId, isActive: true })`). Si no existe, descarta el mensaje con un warning — por eso hace falta crear la maceta con el Node ID exacto *antes* de que el nodo empiece a publicar.
-2. **`normalizeTelemetry(raw)`** (línea 15): traduce el contrato en español del nodo real (`humedad`, `temp_ambiente`, `hum_ambiente`) a los nombres internos (`soil`, `temp`, `air`), y también acepta el contrato legado en inglés (`soilMoisture`, etc. — usado por el simulador viejo) vía el operador `??`. También separa el diagnóstico (`rssi`/`ssid`/`ip`/`heap`) en su propio objeto.
-3. **Bifurcación clave** (línea 60): si `t.soil` es `null` (el mensaje no traía `humedad` — el caso de hoy, mientras el sensor no está conectado), el backend **solo actualiza el diagnóstico y el estado online** de la maceta (línea 61) y corta ahí. No crea ningún `Reading`, no corre el motor de decisión.
-4. **Si trae `humedad`**: valida rangos físicos con `rangeErrors()` (línea 35: 0-100% para humedades, -40..80°C para temperatura), y crea un documento `Reading` (línea 75). Si la humedad viene fuera de 0-100 (por ejemplo, un valor crudo de ADC sin calibrar), el documento se guarda con `status: 'invalida'` — se ve en el historial, pero no dispara riego.
-5. **Deduplicación** (línea 86-88): el modelo `Reading` tiene un índice único en `{nodeId, measuredAt}` ([`models/Reading.js`](../backend/src/models/Reading.js), línea 20). Si el mismo nodo reenvía la misma medición (retransmisión offline), Mongo rechaza el insert con código `11000` y el handler simplemente retorna sin error.
-6. **Difunde por SSE** (línea 105: `broadcast('reading', {...}, pot.ownerId)`) — así el dashboard se actualiza sin que nadie recargue la página (ver sección 5).
-7. **Dispara el motor de decisión** (línea 119-120), pero solo si la lectura es válida **y** reciente (menos de 10 minutos desde `measuredAt` — para que una retransmisión vieja no dispare un riego "hoy" con datos de hace horas).
+1. **Busca la maceta** por `nodeId` (`Pot.findOne({ nodeId, isActive: true })`). Si no existe, descarta el mensaje con un warning: hay que crear la maceta con el Node ID exacto (`nodo1`) *antes* de que el nodo publique.
+2. **`normalizeTelemetry(raw)`** traduce el contrato del nodo (`humedad`, `temp_ambiente`, `hum_ambiente`, `bomba`) a los nombres internos (`soil`, `temp`, `air`, `pump`), y acepta también el contrato anterior en inglés (`soilMoisture`…, del simulador) con el operador `??`. Separa el diagnóstico (`rssi`/`ssid`/`ip`/`heap`).
+3. **Bifurcación**: si no hay `humedad` es un *heartbeat* de diagnóstico: se actualiza `online`/`diagnostics` de la maceta y se corta ahí (sin `Reading`, sin motor). Con `humedad` sigue el flujo de lectura.
+4. **Validación y guardado**: `rangeErrors()` chequea los rangos físicos (humedades 0–100 %, temperatura −40..80 °C; solo los campos presentes). Se crea un `Reading`; si algo está fuera de rango queda `status: 'invalida'` — se ve en el historial pero no dispara nada. Un valor crudo sin calibrar cae acá.
+5. **Deduplicación**: `Reading` tiene un índice único `{nodeId, measuredAt}`; un reenvío de la misma medición hace fallar el insert con código `11000` y el handler retorna sin error. Como el firmware no manda timestamp, `measuredAt` es la hora de recepción (ver recomendaciones en el contrato).
+6. **Estado de la bomba**: si el mensaje trae `bomba`, llama a `irrigationService.applyPumpState()` con `via:'telemetria'` (sección 3.3). Sirve para mostrar "Regando…" y corregir el estado si se perdió un evento (el firmware publica sin QoS), pero **nunca confirma una orden**: solo lo hace el evento explícito del nodo.
+7. **Difunde por SSE** (`broadcast('reading', …)`) para que el dashboard se actualice sin recargar (sección 5).
+8. **Corre el motor de decisión**, solo si la lectura es válida **y** reciente (menos de 10 min), para que una retransmisión vieja no dispare nada "hoy".
 
 ### 3.2 El motor de decisión → [`services/decisionService.js`](../backend/src/services/decisionService.js)
 
-`evaluateReading(pot, reading)` (línea 14) es el corazón funcional del sistema. Recibe la maceta (con sus umbrales) y la lectura recién normalizada, y aplica, en orden:
+`evaluateReading(pot, reading)` aplica las reglas de negocio con los umbrales de la maceta. Con `CONTROL_RIEGO=backend` (el diseño):
 
-1. **Humedad bajo el mínimo** (línea 24: `soil < pot.minMoisture`): consulta `weatherService.rainExpected()` para ver si hay lluvia prevista en las próximas 6 horas por encima de `pot.rainProbThreshold`.
-   - Si hay lluvia prevista → crea un `Event` tipo `riego_pospuesto` y una alerta `preventiva`. **No riega.**
-   - Si no hay lluvia → llama a `triggerIrrigation()` (sección 3.3) y levanta una alerta `critica`.
-2. **Humedad sobre el máximo** (línea 52): crea un `Event` tipo `riego_no_aplicado` y una alerta `exceso_humedad`. Nunca riega en este caso.
-3. **Humedad en rango**: resuelve (cierra) cualquier alerta de humedad que estuviera activa (línea 67).
-4. **Regla de calor** (línea 73, independiente de las anteriores): si `temp` no es `null` y supera `pot.heatTempThreshold` con humedad relativamente baja, dispara un riego breve adicional (`origin: 'calor'`) y una alerta `calor_extremo`. Como hoy el nodo no manda temperatura, esta regla simplemente no se evalúa (`temp != null` es `false`) — no rompe nada, solo queda inactiva hasta que el AM2302 esté conectado.
+| Condición | Qué hace |
+|---|---|
+| Humedad **bajo el mínimo** | Consulta el pronóstico (`weatherService.rainExpected`, 6 h). **Con lluvia prevista**: evento `riego_pospuesto` + alerta `preventiva`. **Sin lluvia**: si ya pasó la espera desde el último riego, `triggerIrrigation()` + alerta `critica`; si no, solo la alerta `critica` con el aviso "esperando que haga efecto el riego reciente" |
+| Humedad **sobre el máximo** | Evento `riego_no_aplicado` + alerta `exceso_humedad` |
+| Humedad **en rango** | Resuelve las alertas de humedad abiertas |
+| **Calor** (si hay temperatura) | Alerta `calor_extremo` + riego breve (`triggerIrrigation`, `origin:'calor'`), con la misma espera |
 
-**Invariante importante**: toda rama de esta función crea un `Event`, incluso cuando la decisión es "no regar". No existe un camino donde el sistema decida algo sobre el riego sin dejarlo registrado.
+**La espera entre riegos** (`DECISION_COOLDOWN_MIN`, 10 min; helper `recentEvent`): el nodo manda telemetría cada pocos segundos pero el suelo tarda minutos en reflejar el agua. Sin la espera, con la humedad todavía baja se volvería a regar en la lectura siguiente. Cuenta cualquier riego reciente (automático, manual o fallido) y también evita registrar un evento "pospuesto" o "no aplicado" en cada lectura. El riego manual no la respeta.
 
-### 3.3 Ejecutar el riego → [`services/irrigationService.js`](../backend/src/services/irrigationService.js)
+La alerta `critica` nunca dice "riego activado" si no se emitió una orden: el texto sale del resultado de `triggerIrrigation` (`riego omitido (modo lectura)`, `riego en curso`, `esperando que haga efecto el riego reciente`).
 
-`triggerIrrigation({ pot, durationSec, origin, ... })` (línea 19) es el único lugar del código que puede iniciar un riego — lo usan tanto el motor automático (sección 3.2) como el botón "Regar ahora" del dashboard (`origin: 'manual'`).
+**Invariante**: toda decisión de riego queda registrada como `Event`, incluso la de "no regar" (una vez por ventana de espera, no una por lectura). Como hoy no hay temperatura (AM2302 sin código), la regla de calor no se evalúa (`temp != null` es falso).
 
-1. **Primera pregunta: ¿estamos en modo escritura?** (línea 23: `if (!isWriteMode())`). Si `MODO_ESCRITURA=false` (el default en desarrollo), crea igual el `Event` — con el mensaje `[modo lectura] riego omitido: MODO_ESCRITURA=false` — y **corta ahí**, sin tocar el broker. Esto es lo que vas a ver mientras desarrollás con el simulador: la decisión queda 100% registrada y visible, pero nunca sale una orden real.
-2. **Si estamos en modo escritura**: chequea que no haya ya un riego `enviada` para esa maceta (evita solapar órdenes), crea el `Event` (`result: 'pendiente'`) y un documento `IrrigationCommand` con un `uuid` propio.
-3. **Publica el comando** (línea 66): `publishCommand(pot.nodeId, { activar_riego: true, duracion_seg: durationSec, commandId: uuid })` — esto es lo que el firmware del ESP32 recibiría en `.../comando` si estuviera suscripto y procesando comandos (hoy el `.ino` de referencia solo loguea el mensaje recibido, `onMessage()` línea 100 — accionar el relé es lo próximo que falta en el firmware).
-4. Marca la maceta como `watering.active = true` y difunde por SSE.
+*Con `CONTROL_RIEGO=nodo` (compatibilidad con el sketch de prueba)* el motor solo levanta y resuelve alertas: sin órdenes ni eventos de decisión, porque ese nodo riega por su cuenta.
 
-**La confirmación** — `handleAck(nodeId, payload)` (línea 86) — es la función que corre cuando llega un mensaje a `.../evento`. El contrato real del nodo es `{"maceta_id":1,"evento":"riego_exitoso"}` (sin `commandId`): como no hay forma de saber a qué comando exacto corresponde, el backend confirma **el comando `enviada` más reciente de ese nodo** (línea 98: `.sort({ sentAt: -1 })`). Si en el futuro el firmware manda `commandId`, el matching es exacto (línea 97).
+### 3.3 El riego → [`services/irrigationService.js`](../backend/src/services/irrigationService.js)
 
-Si nunca llega confirmación, `expireStaleCommands()` (línea 132, llamado cada minuto desde `jobs/scheduler.js` línea 31) marca la orden como `expirada` pasado `COMMAND_TIMEOUT_SEC` (default 60s).
+**Orden del backend — `triggerIrrigation` / `applyPumpState` / `finishCommand`**
+
+`triggerIrrigation({ pot, durationSec, origin, … })` es el único lugar que puede emitir una orden (lo usan el motor y el botón "Regar ahora", `origin:'manual'`). Sus guardas, en orden:
+
+1. **`nodo_autonomo`**: solo con `CONTROL_RIEGO=nodo`; retorna sin hacer nada (ese nodo no procesa comandos). El controller lo traduce en `409 NODE_NO_COMMANDS`.
+2. **Modo lectura**: con `MODO_ESCRITURA=false` crea el `Event` ("`[modo lectura]` riego omitido") y corta antes de tocar el broker.
+3. **Riego en curso**: si ya hay una orden `enviada` para esa maceta, no solapa otra.
+4. Crea el `Event` (`pendiente`) y un `IrrigationCommand` con `uuid`, publica `{activar_riego, duracion_seg, commandId}` con `publishCommand()` y marca la maceta como regando.
+
+**La confirmación** llega por `handleNodeEvent`, que corre por cada mensaje en `.../evento`. Si trae `bomba` busca la maceta y llama a **`applyPumpState(pot, {on, humedad, motivo, commandId, executedDurationSec, via})`**:
+
+- **Hay una orden pendiente**: el `bomba:false` del **evento** la confirma vía `finishCommand()` (orden `confirmada`, evento `confirmado`, `watering` apagado, `lastIrrigation` con la **duración real** que reportó el nodo). Con `commandId` se matchea esa orden exacta; un evento de un `commandId` que no está pendiente se ignora. Si el motivo es `corte por tiempo maximo`, la orden queda `fallida`.
+- **Solo el evento confirma**, no la telemetría: el `bomba:false` de la telemetría puede ser anterior a que el nodo reciba la orden (o el nodo puede estar ignorándola), y darla por cumplida mostraría un riego exitoso que nunca ocurrió.
+- **El contrato anterior** — `handleAck`: `{"evento":"riego_exitoso"}` o `{"ok":true}` también confirman.
+
+**Bomba encendida sin orden del backend** (p. ej. el sketch de prueba): `applyPumpState` lo registra como un `Event` `riego_activado` con `source:'nodo'` y lo cierra al apagarse (`fallido` si fue un corte de seguridad), para que la actividad de la bomba nunca pase inadvertida. Es idempotente: el mismo estado por evento y por telemetría no duplica nada.
+
+**Si nunca llega confirmación**, `expireStaleCommands()` (cada minuto, desde `jobs/scheduler.js`) marca la orden `expirada` pasados `duracion + COMMAND_TIMEOUT_SEC` (60 s de margen): el plazo incluye la duración para no dar por perdida una orden de 90 s mientras la bomba todavía riega.
 
 ---
 
 ## 4. Configuración: el archivo que decide todo el comportamiento
 
-[`backend/src/config/env.js`](../backend/src/config/env.js) es el **único** lugar donde se lee `process.env` en todo el backend — ninguna otra parte del código accede a variables de entorno directamente. Lee `backend/.env` (nunca commiteado) y valida todo contra un schema Joi.
+[`backend/src/config/env.js`](../backend/src/config/env.js) es el **único** lugar donde se lee `process.env`; ninguna otra parte del código accede a variables de entorno directamente. Lee `backend/.env` (nunca commiteado) y valida todo contra un schema Joi.
 
-Las variables que importan para esta conexión (sección MQTT, líneas 16-25):
+Las variables que importan para esta conexión:
 
 | Variable | Para qué | Dónde se usa |
 |---|---|---|
-| `MQTT_HOST` / `MQTT_PORT` | Dirección de HiveMQ | `mqtt/client.js` línea 33, arma la URL `mqtts://` |
-| `MQTT_USER` / `MQTT_PASS` | Tu credencial personal en HiveMQ | `mqtt/client.js` línea 36-37 |
-| `MQTT_CLIENT_ID` | Identificador único de tu conexión | `mqtt/client.js` línea 38 — si dos personas usan el mismo, HiveMQ las desconecta en loop mutuamente |
-| `TOPIC_PREFIX` | A qué "canal" te suscribís | `mqtt/client.js` línea 44-45 y `publishCommand` línea 87 |
-| `MODO_ESCRITURA` | Si tu backend puede publicar comandos | `irrigationService.js` línea 23, vía `isWriteMode()` |
+| `MQTT_HOST` / `MQTT_PORT` | Dirección de HiveMQ | `mqtt/client.js`, arma la URL `mqtts://` |
+| `MQTT_USER` / `MQTT_PASS` | Tu credencial en HiveMQ (para ordenar riego necesita **Publish**) | `mqtt/client.js` |
+| `MQTT_CLIENT_ID` | Identificador único de tu conexión | `mqtt/client.js` — si dos personas usan el mismo, HiveMQ las desconecta en loop |
+| `TOPIC_PREFIX` | A qué "canal" te suscribís; tiene que ser el mismo `PREFIX` del nodo | `mqtt/client.js` (suscripciones y `publishCommand`) |
+| `MODO_ESCRITURA` | Si tu backend puede publicar órdenes | `isWriteMode()`, usado en `irrigationService.triggerIrrigation` |
+| `CONTROL_RIEGO` | `backend` (default: el backend decide) o `nodo` (solo compatibilidad con el sketch de prueba) | `decisionService.evaluateReading` y `irrigationService.triggerIrrigation` |
+| `DECISION_COOLDOWN_MIN` | Espera entre riegos automáticos y entre decisiones repetidas (10 min) | `decisionService` (`recentEvent`) |
+| `COMMAND_TIMEOUT_SEC` | Margen para que el nodo confirme, además de la duración del riego (60 s) | `irrigationService.expireStaleCommands` |
 
-Cambiar cualquiera de estas 5 variables y reiniciar (`npm run dev`) es la única forma de cambiar a qué te conectás — no hay que tocar código para apuntar a `gda/prod` en vez de tu prefijo de desarrollo, por ejemplo.
+Cambiar cualquiera de estas variables y reiniciar (`npm run dev`) es la única forma de cambiar a qué te conectás o cómo decide: no hay que tocar código para apuntar a `gda/prod` en vez de tu prefijo de desarrollo.
 
 ---
 
@@ -151,40 +183,48 @@ Hasta acá, todo lo que pasó quedó guardado en MongoDB (vía Mongoose) y "grit
 
 Cuatro colecciones se tocan en el flujo de telemetría/riego:
 
-- **`Pot`** ([`models/Pot.js`](../backend/src/models/Pot.js)): el documento "vivo" de cada maceta — `lastReading`, `diagnostics`, `watering`, `lastIrrigation` son snapshots que se sobreescriben en cada mensaje, para que el dashboard tenga un solo `GET` que traer al cargar la página.
-- **`Reading`** ([`models/Reading.js`](../backend/src/models/Reading.js)): serie temporal completa, una fila por lectura, con el índice único de deduplicación ya mencionado.
-- **`Event`**: el historial de decisiones de riego (activado, pospuesto, no aplicado, omitido por modo lectura).
-- **`IrrigationCommand`**: el registro de cada orden publicada, con su `uuid` y estado (`enviada`/`confirmada`/`fallida`/`expirada`).
+- **`Pot`** ([`models/Pot.js`](../backend/src/models/Pot.js)): el documento "vivo" de cada maceta, con sus umbrales y su configuración de riego. `lastReading`, `diagnostics`, `watering` y `lastIrrigation` son snapshots que se sobreescriben en cada mensaje, para que el dashboard resuelva el estado actual con un solo `GET`.
+- **`Reading`** ([`models/Reading.js`](../backend/src/models/Reading.js)): serie temporal completa, una fila por lectura, con el índice único de deduplicación. `temperature` y `airHumidity` pueden ser `null`.
+- **`Event`** ([`models/Event.js`](../backend/src/models/Event.js)): historial de riegos y decisiones. El campo **`source`** distingue `backend` (orden del motor o riego manual) de `nodo` (bomba encendida sin orden, detectada por su evento o su telemetría).
+- **`IrrigationCommand`**: registro de cada orden publicada, con su `uuid` y estado (`enviada`/`confirmada`/`fallida`/`expirada`).
 
 ### Server-Sent Events — cómo el navegador se entera "en vivo"
 
-1. El frontend pide un token efímero: `POST /api/stream/token` → [`controllers/streamController.js`](../backend/src/controllers/streamController.js) línea 9, firma un JWT de ~60 segundos con `purpose: 'sse'` (necesario porque `EventSource` del navegador no puede mandar headers `Authorization`, así que el token viaja por query string).
-2. El frontend abre `new EventSource(".../api/stream?token=...")` — eso entra a `openStream()` (línea 18) → `addClient(req, res)` en [`realtime/sseHub.js`](../backend/src/realtime/sseHub.js) línea 8, que deja la conexión HTTP abierta indefinidamente y la guarda en un `Map` en memoria.
-3. Cada vez que `ingestService`, `decisionService` o `irrigationService` llaman a `broadcast(type, payload, ownerId)` (sseHub.js línea 25), el hub recorre ese `Map` y escribe el mensaje a cada cliente conectado cuyo `ownerId` coincida (o que sea admin) — esto es lo que hace que **dos pestañas del dashboard, o dos usuarios distintos, vean exactamente los eventos que les corresponden** y no los de macetas ajenas.
-4. Del lado del frontend, [`composables/useRealtimeStream.js`](../frontend/src/composables/useRealtimeStream.js) (línea 6) envuelve todo esto: pide el token, abre el `EventSource`, y registra un listener por cada tipo de evento (`reading`, `event`, `alert`, `pot_status`) que le pasen las páginas. Como el token dura ~60s, `onerror` (línea 31) cierra la conexión vieja y `scheduleReconnect()` (línea 42) pide un token nuevo a los 3 segundos — por eso la reconexión es transparente para quien mira el dashboard.
+1. El frontend pide un token efímero: `POST /api/stream/token` → `issueStreamToken` ([`controllers/streamController.js`](../backend/src/controllers/streamController.js)) firma un JWT de ~60 s con `purpose: 'sse'`. Hace falta porque `EventSource` no puede mandar headers `Authorization`; el token viaja por query string.
+2. El frontend abre `new EventSource(".../api/stream?token=...")`: entra a `openStream()` → `addClient(req, res)` en [`realtime/sseHub.js`](../backend/src/realtime/sseHub.js), que deja la conexión HTTP abierta y la guarda en un `Map` en memoria.
+3. Cada vez que `ingestService`, `decisionService` o `irrigationService` llaman a `broadcast(type, payload, ownerId)`, el hub recorre ese `Map` y escribe el mensaje a cada cliente conectado cuyo `ownerId` coincida (o que sea admin): dos usuarios distintos ven solo los eventos de sus propias macetas.
+4. Del lado del frontend, [`composables/useRealtimeStream.js`](../frontend/src/composables/useRealtimeStream.js) envuelve todo: pide el token, abre el `EventSource` y registra un listener por tipo de evento (`reading`, `event`, `alert`, `pot_status`). Como el token dura ~60 s, `onerror` cierra la conexión y `scheduleReconnect()` pide uno nuevo a los 3 s, así la reconexión es transparente.
+
+### El gráfico de 24 horas
+
+`GET /api/pots/:id/readings/recent` ([`readingController.recentReadings`](../backend/src/controllers/readingController.js)) **no devuelve lecturas crudas**: agrupa con `$group`/`$dateTrunc` en intervalos de `ceil(horas*60/300)` minutos (5 min para 24 h) y promedia, devolviendo unos 300 puntos sin importar la cadencia de la telemetría. Un simple `.limit()` mostraría las lecturas más viejas de la ventana. Las series sin datos (temperatura y aire, hoy) no se dibujan.
 
 ### El otro camino: HTTP normal para todo lo que no es "tiempo real"
 
-Crear una maceta, pedir el historial paginado, loguearse, forzar un riego manual — todo eso son llamados REST normales desde `frontend/src/services/api.js` contra `backend/src/routes/*.js` → `controllers/*.js`. No tiene nada especial relacionado al hardware; es el mismo patrón CRUD del resto de la skill de arquitectura. El único cruce con esta guía es `POST /api/pots/:id/irrigate` ([`potController.js`](../backend/src/controllers/potController.js)), que termina llamando al mismo `triggerIrrigation()` de la sección 3.3.
+Crear una maceta (con sus umbrales), pedir el historial paginado, loguearse, forzar un riego manual: son llamados REST desde `frontend/src/services/api.js` contra `backend/src/routes/*.js` → `controllers/*.js`. El cruce con el hardware es `POST /api/pots/:id/irrigate` ([`potController.js`](../backend/src/controllers/potController.js)), que llama a `triggerIrrigation({origin:'manual'})` y recorre el mismo circuito de orden → ejecución → confirmación que el riego automático.
 
 ---
 
-## 6. El simulador — mismo código, distinto emisor
+## 6. El simulador
 
-[`simulator/index.js`](../simulator/index.js) no es parte de "cómo se conecta todo": es un reemplazo temporal del Tramo 1. Se conecta a HiveMQ con una credencial que tenga permiso de *publish* (`gda_sim_tunombre`) y publica exactamente el mismo JSON que publicaría el `.ino` (incluida la humedad, cosa que el nodo real todavía no manda) al mismo topic `{PREFIX}/{nodeId}/telemetria`. Desde el punto de vista del backend, un mensaje del simulador y un mensaje del ESP32 real son indistinguibles — por eso sirve para probar los tramos 2 a 5 completos sin depender del hardware.
+[`simulator/index.js`](../simulator/index.js) **ya no es necesario para el flujo normal**: hay un nodo real publicando. Sigue sirviendo para probar el ciclo de órdenes sin hardware con tu prefijo de desarrollo. Usa el contrato anterior (`temp_ambiente`, `hum_ambiente`, confirma con `riego_exitoso`), que el backend sigue aceptando. Ver la sección 4 de [GUIA_HARDWARE_FIRMWARE.md](GUIA_HARDWARE_FIRMWARE.md).
 
 ---
 
 ## 7. Resumen de un ciclo completo, de punta a punta
 
-1. El ESP32 mide humedad → arma JSON → `mqtt.publish()` a `gda/prod/nodo1/telemetria` (broker HiveMQ).
-2. HiveMQ reenvía ese mensaje a todo suscriptor de `gda/prod/+/telemetria` — entre ellos, el backend desplegado (`mqtt/client.js`).
-3. `client.js` extrae `nodeId="nodo1"`, canal `"telemetria"` → llama `handleTelemetry("nodo1", payload)` (`ingestService.js`).
-4. `ingestService` guarda un `Reading`, actualiza el `Pot`, difunde `reading` por SSE, y llama `evaluateReading()` (`decisionService.js`).
-5. `decisionService` compara contra los umbrales de esa maceta + el pronóstico cacheado → decide regar → llama `triggerIrrigation()` (`irrigationService.js`).
-6. `irrigationService` chequea `MODO_ESCRITURA` → si es `true`, crea `Event` + `IrrigationCommand` → `publishCommand()` (`mqtt/client.js`) → HiveMQ → `gda/prod/nodo1/comando`.
-7. El ESP32, suscripto a ese topic, recibe el comando en `onMessage()` → (pendiente en el firmware) acciona el relé → publica en `.../evento`.
-8. El backend recibe ese evento → `handleAck()` confirma el `IrrigationCommand` y el `Event` → difunde por SSE.
-9. El navegador, con el `EventSource` abierto, recibe el evento `event` y `pot_status` → Vue actualiza la UI sin recargar.
+**Riego automático**
 
-Cada número de esta lista es una función mencionada en las secciones 2 a 5 — si algo del ciclo no funciona, este mapa dice exactamente en qué archivo y función mirar.
+1. El ESP32 llama a `publicarTelemetria()`: mide el FC-28 y publica `{humedad, bomba:false, rssi, …}` en `gda/prod/nodo1/telemetria`.
+2. HiveMQ la reenvía a todo suscriptor de `gda/prod/+/telemetria`, entre ellos `mqtt/client.js`, que la encola para ese nodo → `handleTelemetry("nodo1", payload)`.
+3. `ingestService` guarda un `Reading`, actualiza `Pot.lastReading`, difunde `reading` por SSE y llama `evaluateReading()`.
+4. `evaluateReading`: la humedad está bajo el mínimo de la maceta, no hay lluvia prevista y pasó la espera desde el último riego → `triggerIrrigation()`.
+5. `triggerIrrigation` crea un `Event` `pendiente` y un `IrrigationCommand`, y `publishCommand()` publica `{activar_riego:true, duracion_seg:5, commandId}` en `gda/prod/nodo1/comando` (solo con `MODO_ESCRITURA=true` y una credencial con Publish). La maceta pasa a "Regando…" por SSE.
+6. El ESP32, suscripto a ese topic, recibe la orden en `onMessage()` → `iniciarRiego()`: enciende el relé, fija `tBombaFin` y publica el evento `{bomba:true, motivo:"orden de riego", commandId}`.
+7. A los 5 s `servicioBomba()` ve que venció el tiempo → `detenerRiego()`: apaga el relé y publica `{bomba:false, motivo:"fin de riego", duracion_seg:5, commandId}` en `gda/prod/nodo1/evento`.
+8. El backend: `handleNodeEvent` → `applyPumpState` → `finishCommand`: la orden queda `confirmada`, el evento `confirmado`, "Último riego" se actualiza con la duración real, y se difunden `event` + `pot_status`.
+9. El navegador, con el `EventSource` abierto, recibe `reading`, `event`, `alert` y `pot_status` y Vue actualiza la UI sin recargar.
+
+**Riego manual**: el usuario toca "Regar ahora" → `POST /api/pots/:id/irrigate` → `triggerIrrigation({origin:'manual'})` y sigue desde el paso 5 (sin la espera entre riegos).
+
+Cada paso de esta lista es una función de las secciones 2 a 5: si algo del ciclo no funciona, este mapa dice en qué archivo mirar.

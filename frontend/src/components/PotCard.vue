@@ -17,11 +17,12 @@
         <span class="gda-readout-value" :class="`gda-zone--${zone}`">{{ fmt(pot.lastReading.soilMoisture) }}<small>%</small></span>
         <span class="gda-metric-label">Humedad suelo</span>
       </div>
-      <div class="gda-readout">
+      <!-- Temperatura y aire solo si el nodo los reporta (el AM2302 puede no estar conectado aún) -->
+      <div v-if="pot.lastReading.temperature != null" class="gda-readout">
         <span class="gda-readout-value">{{ fmt(pot.lastReading.temperature) }}<small>°C</small></span>
         <span class="gda-metric-label">Temp.</span>
       </div>
-      <div class="gda-readout">
+      <div v-if="pot.lastReading.airHumidity != null" class="gda-readout">
         <span class="gda-readout-value">{{ fmt(pot.lastReading.airHumidity) }}<small>%</small></span>
         <span class="gda-metric-label">Aire</span>
       </div>

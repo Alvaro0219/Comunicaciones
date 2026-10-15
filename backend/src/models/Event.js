@@ -11,6 +11,9 @@ const EventSchema = new mongoose.Schema({
   // Trazabilidad: qué originó el evento (ciclo automático o acción manual de un usuario)
   origin: { type: String, enum: ['auto', 'manual'], required: true, index: true },
   byUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  // 'nodo' = riego que decidió el propio firmware con su regla local (lo reporta en su evento
+  // de bomba); 'backend' = riego que ordenó el motor de decisión o el botón manual.
+  source: { type: String, enum: ['backend', 'nodo'], default: 'backend', index: true },
   durationSec: { type: Number },
   commandUuid: { type: String, index: true },
   result: { type: String, enum: ['pendiente', 'confirmado', 'fallido', 'no_aplica'], default: 'no_aplica' },

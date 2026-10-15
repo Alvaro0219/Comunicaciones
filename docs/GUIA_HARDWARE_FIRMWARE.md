@@ -12,16 +12,16 @@ Esta guía explica cómo trabajar contra el sistema que ya está funcionando: el
 
 | Pieza | Dónde corre | Quién la maneja |
 |---|---|---|
-| Nodo ESP32 (`nodo1`) | Casa de Tomás, publica cada 5s a `gda/prod` | Tomás (único que hace OTA) |
+| Nodo ESP32 (`nodo1`) | Casa de Tomás. **Mide y ejecuta órdenes; no decide.** Publica a `gda/prod` | Tomás (único que hace OTA) |
 | Broker MQTT | HiveMQ Cloud (TLS 8883) | Punto fijo, ya configurado |
-| Backend + dashboard | Cada uno en local (este repo) → luego desplegado | Todos |
+| Backend + dashboard | Cada uno en local (este repo) → luego desplegado. **Decide el riego** (umbrales + pronóstico) | Todos |
 | Simulador | Local, para desarrollar sin el nodo | Todos |
 
 **Reglas del equipo (importan):**
 - `MQTT_CLIENT_ID` **único por persona** — dos clientes con el mismo ID se desconectan mutuamente en loop y parece un problema de red.
 - `TOPIC_PREFIX` **propio en desarrollo** (`gda/dev-alvaro`, `gda/dev-luquita`). `gda/prod` es solo del nodo real y del backend desplegado.
-- `MODO_ESCRITURA=false` **siempre en local**: tu backend evalúa y loguea, pero no publica comandos. Sumado a que las cuentas personales son *Subscribe only* en HiveMQ, son dos capas que impiden activar la bomba real por accidente.
-- El firmware lo maneja quien tiene el hardware. La copia de referencia está en [`firmware/gda-nodo/`](../firmware/gda-nodo/) (con `secrets.h.example`; el `secrets.h` real jamás se commitea).
+- `MODO_ESCRITURA=false` **siempre en local**: tu backend evalúa y registra la decisión, pero no publica órdenes. Sumado a que las cuentas personales son *Subscribe only* en HiveMQ, son dos capas que impiden activar la bomba real por accidente. Para regar (aun en pruebas) hace falta una credencial con Publish — ver 3.4.
+- El firmware lo maneja quien tiene el hardware. El firmware del diseño está en [`firmware/gda-nodo-v2/`](../firmware/gda-nodo-v2/) (con `secrets.h.example`; el `secrets.h` real jamás se commitea). Ver la sección 5.
 
 ---
 
@@ -31,7 +31,7 @@ Antes de tocar código, comprobá que llegás al broker:
 
 1. Descargar e instalar [MQTT Explorer](https://mqtt-explorer.com).
 2. Nueva conexión: **Host** = el host de HiveMQ (documento del equipo), **Port** = `8883`, **Username/Password** = tu credencial personal, y — el paso que todos fallan — activar el toggle **Encryption (tls)** (arriba a la derecha; la URL cambia sola a `mqtts://`). El desplegable Protocol se deja en `mqtt://`.
-3. Conectar. Deberías ver el árbol `gda → prod → nodo1 → telemetria` actualizándose cada 5 segundos con `rssi`, `ssid`, `ip` y `heap`.
+3. Conectar. Deberías ver el árbol `gda → prod → nodo1 → telemetria` actualizándose periódicamente con `humedad`, `bomba`, `rssi`, `ssid`, `ip` y `heap`.
 
 Si ves eso, ya estás conectado al sistema real. Si dice `Disconnected from server`, el toggle TLS está apagado.
 
@@ -51,6 +51,7 @@ MQTT_PASS=<tu contraseña>
 MQTT_CLIENT_ID=backend-tunombre      # único por persona
 TOPIC_PREFIX=gda/dev-tunombre        # tu prefijo de desarrollo
 MODO_ESCRITURA=false                 # siempre false en local
+CONTROL_RIEGO=backend                # el backend decide (default); ver ESP32_CONNECTION_GUIDE.md, sección 4
 ```
 
 ### 3.2 Levantar y verificar
@@ -69,63 +70,85 @@ Conectado a HiveMQ (backend-tunombre, prefijo gda/dev-tunombre, escritura=false)
 
 El backend asocia los mensajes a macetas por el **Node ID** del topic. En el dashboard: Macetas → Nueva maceta → Node ID = `nodo1` (el mismo que publica el firmware/simulador). Sin esa maceta, el backend loguea `Telemetría de nodo no registrado` y descarta los mensajes.
 
-### 3.4 Mirar el nodo real (opcional, solo lectura)
+### 3.4 Cómo decide el sistema (y qué vas a ver)
 
-Cambiando `TOPIC_PREFIX=gda/prod` tu backend consume la telemetría del nodo verdadero: vas a ver su estado online, IP, señal WiFi y RAM en el detalle de la maceta. Con `MODO_ESCRITURA=false` + cuenta *Subscribe only* no podés interferir. Volvé a tu prefijo para desarrollar.
+**El nodo solo mide y ejecuta; el que decide es el backend** (`CONTROL_RIEGO=backend`, el default). Con `nodo1` publicando y la maceta registrada, en su detalle vas a ver:
+
+- **Estado en vivo**: online, IP (para OTA/Telnet), señal WiFi con su calidad y RAM libre.
+- **Humedad de suelo** (FC-28) actualizándose sin recargar, con la banda de umbrales y el gráfico de las últimas 24 h. La temperatura y la humedad del aire **no aparecen** hasta que el firmware lea el AM2302.
+- **Riego automático**: cuando la humedad baja del **mínimo de la maceta** y no hay lluvia prevista en 6 h, el backend ordena regar. Ves el evento "Riego automático activado (5s)" en `pendiente`, la tarjeta pasa a "Regando…" y, cuando el nodo confirma que apagó la bomba, el evento queda `confirmado` con la duración real y se actualiza "Último riego". Si hay lluvia prevista se registra "Riego pospuesto" en lugar de regar.
+- **Riego manual**: el botón **"Regar ahora"** ordena regar de inmediato (rol técnico o admin). Pasa por el mismo circuito de orden → ejecución → confirmación.
+- **Espera entre riegos de 10 minutos** (`DECISION_COOLDOWN_MIN`): el suelo tarda en reflejar el agua, así que después de regar el backend no vuelve a regar automáticamente hasta pasada la espera (la alerta crítica sigue visible con el aviso). El riego manual no la respeta.
+- **Alertas** según los umbrales de la maceta.
+
+Los umbrales, la duración del riego y la ubicación (para el pronóstico) se configuran **por maceta en el dashboard**; el firmware no tiene reglas de riego.
+
+> **Para que el backend pueda regar de verdad** hacen falta tres cosas: (1) una credencial de HiveMQ con permiso de **Publish** — las cuentas personales son *Subscribe only* y solo sirven para mirar; (2) `MODO_ESCRITURA=true`; (3) el mismo `TOPIC_PREFIX` que usa el nodo. En local con `MODO_ESCRITURA=false` (la regla del equipo) vas a ver las decisiones registradas como `[modo lectura] riego omitido` —una vez por ventana de espera— y el botón "Regar ahora" avisa que el backend está en modo lectura, pero no sale ninguna orden.
+
+> **Probar el riego sin tocar producción:** poné el nodo y tu backend en un prefijo de desarrollo. En `gda-nodo-v2.ino` cambiá `PREFIX = "gda/dev-tunombre"`; en tu `.env`, `TOPIC_PREFIX=gda/dev-tunombre`, `MODO_ESCRITURA=true` y una credencial con publish. Así tu backend riega solo a tu nodo y no interfiere con `gda/prod`. Antes de dejarlo definitivo, volvé `PREFIX` a `gda/prod`.
 
 ---
 
-## 4. Desarrollar sin el nodo: el simulador
+## 4. Simulador (ya no es necesario para el flujo normal)
 
-El simulador habla el mismo contrato que el firmware (el backend no distingue):
+Con el nodo real publicando, el simulador deja de ser el camino principal. Sigue sirviendo para probar el ciclo de órdenes **sin hardware y sin riesgo**, con tu prefijo de desarrollo (`gda/dev-tunombre`, nunca `gda/prod`):
 
 ```bash
 cd simulator
 node index.js --host <HIVEMQ_HOST> --user gda_sim_tunombre --pass <PASS> --prefix gda/dev-tunombre
 ```
 
-Se seca solo (~2%/ciclo), publica cada 5s, obedece `{"activar_riego":true}` y confirma con `riego_exitoso`.
-
-> **Ojo con el permiso**: tu usuario personal es *Subscribe only* y **no puede publicar** la telemetría del simulador. Hace falta una credencial con publish restringida a tu prefijo (`gda_sim_tunombre`) — pedirla a quien administra HiveMQ, como indica el documento del equipo.
-
-Flujo típico de desarrollo (dos terminales + dashboard):
-
-```
-node simulator/index.js --host ... --prefix gda/dev-tunombre   # terminal 1
-cd backend && npm run dev                                      # terminal 2
-cd frontend && npm run dev                                     # terminal 3
-```
-
-En el dashboard: la maceta `nodo1` pasa a online, la humedad baja ciclo a ciclo, y cuando cruza el umbral mínimo vas a ver el evento `[modo lectura] riego omitido: MODO_ESCRITURA=false` — el motor decidió regar pero la guardia local lo frenó, que es exactamente el comportamiento esperado en desarrollo.
+Se seca solo (~2 %/ciclo), publica cada 5 s, obedece `{"activar_riego":true}` y confirma. Usa el contrato anterior (`temp_ambiente`, `hum_ambiente`, confirma con `riego_exitoso`), que el backend sigue aceptando. Para que el backend le mande órdenes necesitás `MODO_ESCRITURA=true` y el mismo `TOPIC_PREFIX` en tu `.env`, además de una credencial con publish para ambos (el usuario personal es *Subscribe only* y no puede publicar la telemetría del simulador ni las órdenes).
 
 ---
 
-## 5. El nodo físico (resumen — el detalle lo tiene Tomás)
+## 5. El nodo físico
 
-### Cableado actual
+### Cableado
 
 | Componente | Pin ESP32 | Nota |
 |---|---|---|
-| AM2302 / DHT22 — DATA | GPIO 15 | Pin de strapping: si la placa no bootea, moverlo a GPIO 4. Sensor pelado → pull-up 10k a VCC |
-| Sensor capacitivo de suelo | GPIO 34 | Solo entrada, sin pull-up interno |
-| Módulo relé — IN | GPIO 26 | Alimentar el módulo desde 5V, no del 3V3 |
+| Sensor de humedad de suelo FC-28 — A0 | GPIO 34 | Solo entrada, ADC1 (sigue andando con WiFi). VCC a **3V3**, nunca a 5V |
+| Módulo relé — IN | GPIO 26 | Alimentar el módulo desde 5V/VIN, no del 3V3. La bomba va por COM y NO con fuente propia, nunca del ESP32 |
+| AM2302 / DHT22 — DATA | GPIO 15 | Cableado pero **sin código** todavía. Pin de strapping: si la placa no bootea, moverlo a GPIO 4. Sensor pelado → pull-up 10k a VCC |
 
-### Particularidades del firmware ([`firmware/gda-nodo/`](../firmware/gda-nodo/))
+El conexionado completo con colores, las reglas y la calibración del sensor están en [GDA_Documentacion_Nodo1.md](GDA_Documentacion_Nodo1.md) (la mantiene Tomás); el cableado no cambia con el firmware nuevo.
 
-- **WiFiMulti**: tres redes precargadas en `secrets.h`; el nodo salta a la que encuentre. Por eso su IP cambia — y por eso la publica en la telemetría.
-- **OTA** (actualización sin cable): solo desde la **misma LAN** que el nodo. Arduino IDE → Puerto → Network ports → `gda-nodo1`, contraseña OTA del documento del equipo. Requiere **Partition Scheme = Minimal SPIFFS** (se resetea solo al reabrir el IDE — verificarlo antes de cada subida).
-- **Logs remotos**: Telnet al puerto 23 de la IP del nodo (la IP sale de la telemetría). El Monitor Serie no funciona sobre el puerto de red.
-- Librería DHT del proyecto: **DHT sensor library for ESPx (beegee_tokyo)** — la de Adafruit no compila con este sketch.
+### Firmware: `gda-nodo-v2` ([`firmware/gda-nodo-v2/gda-nodo-v2.ino`](../firmware/gda-nodo-v2/gda-nodo-v2.ino))
 
-### Estado del proyecto (según el documento del equipo)
+**Mide y ejecuta, no decide.** No tiene reglas de riego propias.
+
+- **Mide** la humedad del suelo (FC-28, promedio de 10 muestras, calibrada a 0–100 %) y **publica** la telemetría cada `TELEMETRIA_MS` (30 s), la primera apenas conecta.
+- **Ejecuta** las órdenes de `.../comando`: enciende el relé `duracion_seg` segundos y lo apaga **por tiempo medido en el propio nodo** (si se cae la red a mitad del riego, la bomba igual se apaga). Acota la duración a 120 s (`DURACION_MAX_S`), ignora una orden si ya está regando, y `{"activar_riego":false}` apaga de inmediato.
+- **Confirma** publicando un evento al encender y otro al apagar (con `commandId` y la duración real). Si no hay MQTT en ese momento, guarda el evento y lo reenvía al reconectar: sin el aviso de apagado el backend creería que la orden falló.
+- **Seguridad**: relé apagado al arrancar y durante el OTA; sesión MQTT limpia (no entrega órdenes publicadas mientras estaba desconectado: regar tarde por una orden vieja es peor que no regar).
+- **Conserva** WiFiMulti (3 redes), OTA (misma LAN) y Telnet (puerto 23) del sketch anterior. Los logs remotos salen por Telnet a la IP del nodo.
+
+**Cómo cargarlo** (Arduino IDE 2.x, placa *ESP32 Dev Module*):
+
+1. Librerías (Administrar bibliotecas): **PubSubClient** (Nick O'Leary) y **ArduinoJson** (Benoit Blanchon, **v7.x**).
+2. Copiar a la carpeta del sketch el `secrets.h` que ya usa Tomás (tiene exactamente los mismos nombres; hay un `secrets.h.example`).
+3. Revisar en el `.ino`: `PREFIX` (`gda/prod` o tu prefijo de desarrollo, igual al `TOPIC_PREFIX` del backend) y **calibrar `SUELO_SECO` / `SUELO_MOJADO`** (el sketch imprime `crudo=…` en cada medición para eso; hoy son valores de ejemplo).
+4. **Herramientas → Partition Scheme = Minimal SPIFFS (1.9MB APP with OTA)** — se resetea solo al reabrir el IDE, verificarlo siempre. Ocupa ~56 % de la flash.
+5. Subir (OTA por *Network ports → gda-nodo1* si el nodo ya tiene un firmware con OTA, o por USB).
+
+**Qué tenés que ver** en Telnet/Monitor Serie: `=== GDA nodo v2 (mide y ejecuta) ===` → `MQTT OK` → `Suscrito a gda/prod/nodo1/comando` → `crudo=…` y `TX: {"maceta_id":1,"humedad":…,"bomba":false,…}`. Al mandar una orden: `RX [.../comando]: {"activar_riego":true,…}` → `BOMBA ON por 5 s` → `EVENTO: {"bomba":true,…}` → 5 s después `BOMBA OFF tras 5 s` → `EVENTO: {"bomba":false,…,"duracion_seg":5}`.
+
+> **El sketch de prueba anterior** (`ESP32_GDA_prueba_riego.ino`, en `firmware/gda-nodo/`) riega solo con una regla local de 50–55 % y no procesa comandos: sirvió para validar sensor, relé y bomba, pero **es lo contrario del diseño** y no debe usarse con el backend en modo `backend` (el nodo y el backend se pisarían). Si hay que usarlo, el backend debe correr con `CONTROL_RIEGO=nodo`.
+
+### Estado del proyecto
 
 | Ítem | Estado |
 |---|---|
 | Nodo publica a la nube desde cualquier red | ✅ Funcionando |
 | OTA + Telnet (misma LAN) | ✅ Funcionando |
-| Sensores físicos (AM2302, capacitivo) | ⏳ Pendiente |
-| Backend consumiendo MQTT | ✅ Este repo ya lo hace |
-| Buffer offline en SPIFFS (RNF4) | ⏳ Pendiente (el backend ya acepta `measuredAt`/`source:"replay"` para cuando exista) |
+| Sensor de humedad de suelo + relé + bomba (hardware validado con el sketch de prueba) | ✅ |
+| Firmware `gda-nodo-v2` (mide y ejecuta órdenes) | 🆕 Escrito y **compilado** para ESP32 Dev Module; falta cargarlo en el nodo y probarlo con la bomba |
+| Backend decide (umbrales + pronóstico), riego manual, espera entre riegos, confirmación | ✅ Verificado con pruebas contra la base de datos |
+| Credencial de HiveMQ con **Publish** para el backend | ⏳ Pendiente — sin ella el backend no puede mandar órdenes |
+| Calibrar `SUELO_SECO` / `SUELO_MOJADO` | ⏳ Pendiente |
+| Lectura del AM2302 (temperatura y humedad del aire) | ⏳ Cableado, sin código. El backend y el dashboard ya lo toleran y lo muestran cuando llegue; la regla de calor extremo se activa con él |
+| Buffer offline (RNF4) | ⏳ Pendiente (el backend ya acepta `measuredAt`/`source:"replay"` para cuando exista) |
 
 ---
 
@@ -138,6 +161,15 @@ En el dashboard: la maceta `nodo1` pasa a online, la humedad baja ciclo a ciclo,
 | Backend: reconexiones constantes | Dos clientes con el mismo `MQTT_CLIENT_ID` | Cambiar el tuyo en `.env` |
 | Backend conecta pero el dashboard no muestra nada | No hay maceta con ese Node ID, o prefijos distintos entre simulador y backend | Crear maceta `nodo1`; mismo `TOPIC_PREFIX` en ambos |
 | El motor "no riega" en local | Comportamiento esperado | `MODO_ESCRITURA=false`: mirá el evento `[modo lectura]` en el historial |
+| El nodo está online pero el dashboard dice "Sin lecturas todavía" | Las lecturas llegan como `invalida` (humedad fuera de 0–100, p. ej. sin calibrar) o el nodo no manda `humedad` | Historial → pestaña **Lecturas**: si hay filas `invalida`, revisar la calibración (`SUELO_SECO`/`SUELO_MOJADO`) |
+| Humedad siempre 0 % o 100 % | FC-28 sin calibrar o A0 mal conectado | Calibrar con el log `crudo=…` (sección 6 de la documentación del nodo); revisar el cable a GPIO 34 |
+| "Regar ahora" avisa que el backend está en modo lectura (`READ_ONLY`) | `MODO_ESCRITURA=false` en tu `.env` | Esperado en local. Para regar: credencial con Publish + `MODO_ESCRITURA=true` (ver 3.4) |
+| "Regar ahora" dice `NODE_NO_COMMANDS` | El backend corre con `CONTROL_RIEGO=nodo` | Dejar el default `backend` (el modo `nodo` es solo para el sketch de prueba) |
+| Se mandó una orden pero la bomba no se movió y el evento queda `fallido` ("sin confirmación") | El nodo no recibió la orden o corre un firmware sin comandos | Verificar que el nodo corra `gda-nodo-v2`, que su `PREFIX` sea igual al `TOPIC_PREFIX` del backend, y que en el log aparezca `RX [.../comando]` |
+| El backend no publica y se reconecta una y otra vez | La credencial del backend no tiene permiso de Publish (HiveMQ rechaza el publish y corta la conexión) | Usar una credencial con Publish (`gda_backend` o una de desarrollo) |
+| La bomba se enciende sola, sin orden | El nodo corre el sketch de prueba (regla local 50–55 %) | Cargar `gda-nodo-v2`. El backend lo muestra como un riego `source:"nodo"` en el historial |
+| El backend riega y la humedad no sube | Sensor fuera de la tierra, manguera desconectada o tanque vacío | Revisar el hardware; el backend espera 10 min entre riegos automáticos, así que no encharca |
+| Bomba prendida cuando debería estar apagada (y viceversa) | Relé activo en alto | `RELE_ACTIVO_BAJO = false` en el firmware |
 | Nodo (firmware) `rc=-2` | Fallo TLS | Certificado `CA_CERT` mal pegado |
 | Nodo `rc=4` / `rc=5` | Credencial inválida / sin permiso para ese topic | Revisar `secrets.h` |
 | OTA: `No response from device` | Partition Scheme incorrecto | `Minimal SPIFFS` + una subida por cable |
