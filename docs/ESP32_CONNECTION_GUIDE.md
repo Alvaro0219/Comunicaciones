@@ -20,18 +20,18 @@ El sistema usa un **broker MQTT en la nube (HiveMQ Cloud)** como punto fijo. Ni 
 ```
 
 - **Conexión**: `mqtts://` (TLS), puerto **8883** (o 8884 para WebSocket+TLS).
-- **Autenticación**: usuarios/contraseñas definidos en HiveMQ, con permisos por rol: el nodo y el backend desplegado tienen *Publish+Subscribe*; las cuentas personales de desarrollo son *Subscribe only* (no pueden activar la bomba ni por accidente).
+- **Autenticación**: usuarios/contraseñas definidos en HiveMQ, con permisos por rol: el nodo y el backend desplegado tienen _Publish+Subscribe_; las cuentas personales de desarrollo son _Subscribe only_ (no pueden activar la bomba ni por accidente).
 - **El backend es un cliente más** del broker (librería `mqtt`), no un servidor.
 
 ## 2. Topics
 
 `{PREFIX}` es `gda/prod` para el nodo real y el backend desplegado. En desarrollo, **cada persona usa su propio prefijo** (`gda/dev-nombre`) para no pisarse ni interferir con producción.
 
-| Topic | Dirección | Contenido |
-|---|---|---|
-| `{PREFIX}/{nodeId}/telemetria` | Nodo → Broker | Lecturas de sensores + diagnóstico |
-| `{PREFIX}/{nodeId}/comando` | Backend → Nodo | Orden de riego |
-| `{PREFIX}/{nodeId}/evento` | Nodo → Broker | Confirmación de riego ejecutado |
+| Topic                          | Dirección      | Contenido                          |
+| ------------------------------ | -------------- | ---------------------------------- |
+| `{PREFIX}/{nodeId}/telemetria` | Nodo → Broker  | Lecturas de sensores + diagnóstico |
+| `{PREFIX}/{nodeId}/comando`    | Backend → Nodo | Orden de riego                     |
+| `{PREFIX}/{nodeId}/evento`     | Nodo → Broker  | Confirmación de riego ejecutado    |
 
 El `{nodeId}` (ej. `nodo1`) debe coincidir con el campo **Node ID** de la maceta registrada en el dashboard: es la clave con la que el backend asocia cada mensaje a su maceta.
 
@@ -54,13 +54,13 @@ El firmware publica siempre el diagnóstico; los campos de sensores se suman cua
 }
 ```
 
-| Campo | Tipo | Notas |
-|---|---|---|
-| `humedad` | número 0–100 | Humedad de suelo (%). **Si falta, el mensaje es solo diagnóstico**: el backend actualiza estado online/IP/RSSI pero no registra lectura ni decide riego |
-| `temp_ambiente` | número | °C. Opcional (AM2302 pendiente de conexión) |
-| `hum_ambiente` | número 0–100 | Humedad del aire (%). Opcional |
-| `rssi` / `ssid` / `ip` / `heap` | — | Diagnóstico del nodo. La `ip` es la que se usa para OTA/Telnet |
-| `measuredAt` | epoch (s), opcional | Si falta, el backend usa la hora de recepción. Reservado para retransmisión offline (RNF4, pendiente) junto con `source: "replay"` |
+| Campo                           | Tipo                | Notas                                                                                                                                                   |
+| ------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `humedad`                       | número 0–100        | Humedad de suelo (%). **Si falta, el mensaje es solo diagnóstico**: el backend actualiza estado online/IP/RSSI pero no registra lectura ni decide riego |
+| `temp_ambiente`                 | número              | °C. Opcional (AM2302 pendiente de conexión)                                                                                                             |
+| `hum_ambiente`                  | número 0–100        | Humedad del aire (%). Opcional                                                                                                                          |
+| `rssi` / `ssid` / `ip` / `heap` | —                   | Diagnóstico del nodo. La `ip` es la que se usa para OTA/Telnet                                                                                          |
+| `measuredAt`                    | epoch (s), opcional | Si falta, el backend usa la hora de recepción. Reservado para retransmisión offline (RNF4, pendiente) junto con `source: "replay"`                      |
 
 Validación en el backend: valores fuera de rango físico (humedad 0–100, temperatura −40..80) se guardan marcados `invalida` y no disparan riego. Telemetría de un `nodeId` sin maceta registrada se descarta con log.
 
@@ -82,7 +82,7 @@ Si el mensaje trae `commandId`, el backend confirma esa orden exacta; si no, con
 
 ## 4. Protecciones contra riegos accidentales (dos capas)
 
-1. **Permisos del broker**: las cuentas personales son *Subscribe only* — HiveMQ rechaza cualquier `publish` a `.../comando` aunque el código lo intente.
+1. **Permisos del broker**: las cuentas personales son _Subscribe only_ — HiveMQ rechaza cualquier `publish` a `.../comando` aunque el código lo intente.
 2. **`MODO_ESCRITURA` en el backend**: con `false` (obligatorio en local), el motor evalúa y **registra** la decisión (evento `[modo lectura] riego omitido`), pero no publica la orden. Solo el backend desplegado corre con `true`.
 
 ## 5. Despliegue
@@ -91,7 +91,10 @@ El backend desplegado (Railway/Fly.io) solo necesita salida a internet — **ya 
 
 ## 6. Límites del plan gratuito
 
-| Servicio | Límite | ¿Alcanza? |
-|---|---|---|
-| HiveMQ Cloud | 100 conexiones, 10 GB/mes | Sí — el nodo usa ~4 MB/mes |
-| MongoDB Atlas | 512 MB | Sí |
+| Servicio      | Límite                    | ¿Alcanza?                  |
+| ------------- | ------------------------- | -------------------------- |
+| HiveMQ Cloud  | 100 conexiones, 10 GB/mes | Sí — el nodo usa ~4 MB/mes |
+| MongoDB Atlas | 512 MB                    | Sí                         |
+
+admin@gda.local
+gda123456678

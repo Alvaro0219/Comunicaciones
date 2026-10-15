@@ -8,28 +8,28 @@
 
 ```
 ┌──────────────┐   WiFi + TLS    ┌────────────────┐   TLS (cliente)   ┌───────────────────┐
-│  ESP32 nodo1  │ ─────────────► │  HiveMQ Cloud  │ ◄──────────────── │  Backend Node.js   │
-│  (hardware)   │ ◄───────────── │ (broker MQTT)  │ ─────────────────►│  (este repo)        │
-└──────────────┘   subscribe     └────────────────┘     publish       └─────────┬──────────┘
-                                                                                  │
-                                                              HTTP (REST) + SSE  │  Mongoose
-                                                                                  ▼
+│  ESP32 nodo1 │ ─────────────►  │ HiveMQ Cloud   │ ◄──────────────── │  Backend Node.js  │
+│  (hardware)  │ ◄─────────────  │ (broker MQTT)  │ ─────────────────►│  (este repo)      │
+└──────────────┘   subscribe     └────────────────┘     publish       └─────────┬─────────┘
+                                                                                │
+                                                              HTTP (REST) + SSE │  Mongoose
+                                                                                ▼
                                                                         ┌──────────────────┐
-                                                                        │  MongoDB Atlas    │
+                                                                        │  MongoDB Atlas   │
                                                                         └──────────────────┘
                                                                                   ▲
                                                                                   │
                                                                         ┌──────────────────┐
-                                                                        │  Frontend (Vue)   │
-                                                                        │  navegador        │
+                                                                        │  Frontend (Vue)  │
+                                                                        │  navegador       │
                                                                         └──────────────────┘
 ```
 
 Cinco piezas, cinco "idiomas" distintos de conexión:
 
-| # | Tramo | Protocolo | Quién inicia la conexión |
-|---|---|---|---|
-| 1 | ESP32 ⇄ HiveMQ | MQTT sobre TLS (puerto 8883) | El ESP32 (y el backend) se conectan *al* broker |
+| # |       Tramo       |            Protocolo         | Quién inicia la conexión |
+|---|------------------ |------------------------------|------------------------------------------------|
+| 1 | ESP32 ⇄ HiveMQ   | MQTT sobre TLS (puerto 8883) | El ESP32 (y el backend) se conectan *al* broker |
 | 2 | Backend ⇄ HiveMQ | MQTT sobre TLS (puerto 8883) | El backend, como cliente |
 | 3 | Backend ⇄ MongoDB | Mongoose (driver de MongoDB) | El backend |
 | 4 | Frontend ⇄ Backend (comandos) | HTTP/REST (`/api/...`) | El navegador |
