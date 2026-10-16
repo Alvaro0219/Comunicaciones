@@ -209,8 +209,8 @@ const eventColumns = [
 const readingColumns = [
   { name: 'measuredAt', label: 'Medición', field: 'measuredAt', align: 'left', format: fmtDate },
   { name: 'soilMoisture', label: 'Hum. suelo', field: 'soilMoisture', align: 'center', format: v => `${v}%` },
-  { name: 'temperature', label: 'Temp.', field: 'temperature', align: 'center', format: v => `${v}°C` },
-  { name: 'airHumidity', label: 'Hum. aire', field: 'airHumidity', align: 'center', format: v => `${v}%` },
+  { name: 'temperature', label: 'Temp.', field: 'temperature', align: 'center', format: v => (v == null ? '—' : `${v}°C`) },
+  { name: 'airHumidity', label: 'Hum. aire', field: 'airHumidity', align: 'center', format: v => (v == null ? '—' : `${v}%`) },
   { name: 'source', label: 'Fuente', field: 'source', align: 'center', format: v => v === 'replay' ? 'retransmitida' : 'en vivo' },
   { name: 'status', label: 'Estado', field: 'status', align: 'center' }
 ];
@@ -307,7 +307,11 @@ useRealtimeStream({
   },
   event(data) {
     if (String(data.potId) !== String(potId)) return;
-    events.value.unshift(data);
+    // Un mismo riego se difunde varias veces (pendiente → confirmado/fallido): se actualiza su
+    // fila en vez de agregar otra, que dejaría una fila "pendiente" huérfana al lado.
+    const i = events.value.findIndex((e) => String(e._id) === String(data._id));
+    if (i >= 0) events.value.splice(i, 1, { ...events.value[i], ...data });
+    else events.value.unshift(data);
   },
   alert(data) {
     if (String(data.potId) !== String(potId)) return;

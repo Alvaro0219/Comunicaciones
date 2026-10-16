@@ -58,6 +58,7 @@ Mismo `TOPIC_PREFIX` que el backend. Flags: `--node nodo1` (default), `--interva
 ### 5. El nodo real y el equipo
 - **[docs/MAPA_DEL_SISTEMA.md](docs/MAPA_DEL_SISTEMA.md)** — referencia técnica completa: cómo se conecta cada pieza (ESP32, broker, backend, frontend), archivo por archivo y función por función.
 - [docs/GUIA_HARDWARE_FIRMWARE.md](docs/GUIA_HARDWARE_FIRMWARE.md) — guía práctica del equipo: MQTT Explorer, `.env` del backend, simulador, reglas (prefijos, client IDs, `MODO_ESCRITURA`), estado del nodo y diagnóstico.
+- **[docs/PRUEBA_LOCAL_BROKER_PRODUCCION.md](docs/PRUEBA_LOCAL_BROKER_PRODUCCION.md)** — probar todo en local (backend y frontend en desarrollo) conectado al broker de producción: variables, prueba automática y prueba con el nodo real.
 - [docs/ESP32_CONNECTION_GUIDE.md](docs/ESP32_CONNECTION_GUIDE.md) — contrato MQTT de referencia (topics, payloads, protecciones).
 - [firmware/gda-nodo-v2/](firmware/gda-nodo-v2/) — **firmware del diseño**: el nodo mide y ejecuta las órdenes del backend, sin reglas de riego propias. `secrets.h` nunca se commitea. En [firmware/gda-nodo/](firmware/gda-nodo/) queda el sketch de prueba de Tomás (riega solo; solo para validar hardware).
 

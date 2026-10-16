@@ -75,7 +75,7 @@ El backend asocia los mensajes a macetas por el **Node ID** del topic. En el das
 **El nodo solo mide y ejecuta; el que decide es el backend** (`CONTROL_RIEGO=backend`, el default). Con `nodo1` publicando y la maceta registrada, en su detalle vas a ver:
 
 - **Estado en vivo**: online, IP (para OTA/Telnet), señal WiFi con su calidad y RAM libre.
-- **Humedad de suelo** (FC-28) actualizándose sin recargar, con la banda de umbrales y el gráfico de las últimas 24 h. La temperatura y la humedad del aire **no aparecen** hasta que el firmware lea el AM2302.
+- **Humedad de suelo** (FC-28) actualizándose sin recargar, con la banda de umbrales y el gráfico de las últimas 24 h. **Temperatura y humedad del aire** (AM2302) en la tarjeta, en el detalle y en el gráfico. Si el sensor falla, esas métricas desaparecen en lugar de mostrar un dato inventado.
 - **Riego automático**: cuando la humedad baja del **mínimo de la maceta** y no hay lluvia prevista en 6 h, el backend ordena regar. Ves el evento "Riego automático activado (5s)" en `pendiente`, la tarjeta pasa a "Regando…" y, cuando el nodo confirma que apagó la bomba, el evento queda `confirmado` con la duración real y se actualiza "Último riego". Si hay lluvia prevista se registra "Riego pospuesto" en lugar de regar.
 - **Riego manual**: el botón **"Regar ahora"** ordena regar de inmediato (rol técnico o admin). Pasa por el mismo circuito de orden → ejecución → confirmación.
 - **Espera entre riegos de 10 minutos** (`DECISION_COOLDOWN_MIN`): el suelo tarda en reflejar el agua, así que después de regar el backend no vuelve a regar automáticamente hasta pasada la espera (la alerta crítica sigue visible con el aviso). El riego manual no la respeta.
@@ -110,15 +110,15 @@ Se seca solo (~2 %/ciclo), publica cada 5 s, obedece `{"activar_riego":true}` y 
 |---|---|---|
 | Sensor de humedad de suelo FC-28 — A0 | GPIO 34 | Solo entrada, ADC1 (sigue andando con WiFi). VCC a **3V3**, nunca a 5V |
 | Módulo relé — IN | GPIO 26 | Alimentar el módulo desde 5V/VIN, no del 3V3. La bomba va por COM y NO con fuente propia, nunca del ESP32 |
-| AM2302 / DHT22 — DATA | GPIO 15 | Cableado pero **sin código** todavía. Pin de strapping: si la placa no bootea, moverlo a GPIO 4. Sensor pelado → pull-up 10k a VCC |
+| AM2302 / DHT22 — DATA | GPIO 15 | Lo lee `gda-nodo-v2` (v2.1). Pin de strapping: si la placa no bootea, moverlo a GPIO 4 **y cambiar `PIN_DHT` en el `.ino`**. Sensor pelado → pull-up 10k a VCC |
 
-El conexionado completo con colores, las reglas y la calibración del sensor están en [GDA_Documentacion_Nodo1.md](GDA_Documentacion_Nodo1.md) (la mantiene Tomás); el cableado no cambia con el firmware nuevo.
+El conexionado completo con colores, las reglas y la calibración del sensor están en [GDA_Documentacion_Nodo1.md](GDA_Documentacion_Nodo1.md) (la mantiene Tomás); el cableado no cambia con el firmware nuevo (el AM2302 ya estaba conectado).
 
 ### Firmware: `gda-nodo-v2` ([`firmware/gda-nodo-v2/gda-nodo-v2.ino`](../firmware/gda-nodo-v2/gda-nodo-v2.ino))
 
 **Mide y ejecuta, no decide.** No tiene reglas de riego propias.
 
-- **Mide** la humedad del suelo (FC-28, promedio de 10 muestras, calibrada a 0–100 %) y **publica** la telemetría cada `TELEMETRIA_MS` (30 s), la primera apenas conecta.
+- **Mide** la humedad del suelo (FC-28, promedio de 10 muestras, calibrada a 0–100 %) + la temperatura y humedad del aire (**AM2302**, GPIO 15) y **publica** todo en la telemetría cada `TELEMETRIA_MS` (30 s), la primera apenas conecta. El AM2302 se lee cada 5 s **en segundo plano**, sin frenar el riego, y se conserva la última lectura buena. Si el sensor falla o pasan 2 min sin una lectura buena, `temp_ambiente` y `hum_ambiente` se **omiten** (el backend lo toma como "sin dato"): nunca se manda un 0 ni un valor viejo.
 - **Ejecuta** las órdenes de `.../comando`: enciende el relé `duracion_seg` segundos y lo apaga **por tiempo medido en el propio nodo** (si se cae la red a mitad del riego, la bomba igual se apaga). Acota la duración a 120 s (`DURACION_MAX_S`), ignora una orden si ya está regando, y `{"activar_riego":false}` apaga de inmediato.
 - **Confirma** publicando un evento al encender y otro al apagar (con `commandId` y la duración real). Si no hay MQTT en ese momento, guarda el evento y lo reenvía al reconectar: sin el aviso de apagado el backend creería que la orden falló.
 - **Seguridad**: relé apagado al arrancar y durante el OTA; sesión MQTT limpia (no entrega órdenes publicadas mientras estaba desconectado: regar tarde por una orden vieja es peor que no regar).
@@ -126,13 +126,13 @@ El conexionado completo con colores, las reglas y la calibración del sensor est
 
 **Cómo cargarlo** (Arduino IDE 2.x, placa *ESP32 Dev Module*):
 
-1. Librerías (Administrar bibliotecas): **PubSubClient** (Nick O'Leary) y **ArduinoJson** (Benoit Blanchon, **v7.x**).
+1. Librerías (Administrar bibliotecas): **PubSubClient** (Nick O'Leary), **ArduinoJson** (Benoit Blanchon, **v7.x**) y **DHT sensor library for ESPx** (beegee_tokyo). Es **la de ESPx** (`DHTesp.h`), no la de Adafruit: el sketch incluye `DHTesp.h`.
 2. Copiar a la carpeta del sketch el `secrets.h` que ya usa Tomás (tiene exactamente los mismos nombres; hay un `secrets.h.example`).
 3. Revisar en el `.ino`: `PREFIX` (`gda/prod` o tu prefijo de desarrollo, igual al `TOPIC_PREFIX` del backend) y **calibrar `SUELO_SECO` / `SUELO_MOJADO`** (el sketch imprime `crudo=…` en cada medición para eso; hoy son valores de ejemplo).
-4. **Herramientas → Partition Scheme = Minimal SPIFFS (1.9MB APP with OTA)** — se resetea solo al reabrir el IDE, verificarlo siempre. Ocupa ~56 % de la flash.
+4. **Herramientas → Partition Scheme = Minimal SPIFFS (1.9MB APP with OTA)** — se resetea solo al reabrir el IDE, verificarlo siempre. Ocupa ~57 % de la flash.
 5. Subir (OTA por *Network ports → gda-nodo1* si el nodo ya tiene un firmware con OTA, o por USB).
 
-**Qué tenés que ver** en Telnet/Monitor Serie: `=== GDA nodo v2 (mide y ejecuta) ===` → `MQTT OK` → `Suscrito a gda/prod/nodo1/comando` → `crudo=…` y `TX: {"maceta_id":1,"humedad":…,"bomba":false,…}`. Al mandar una orden: `RX [.../comando]: {"activar_riego":true,…}` → `BOMBA ON por 5 s` → `EVENTO: {"bomba":true,…}` → 5 s después `BOMBA OFF tras 5 s` → `EVENTO: {"bomba":false,…,"duracion_seg":5}`.
+**Qué tenés que ver** en Telnet/Monitor Serie: `=== GDA nodo v2.1 (mide y ejecuta) ===` → `MQTT OK` → `Suscrito a gda/prod/nodo1/comando` → `crudo=…` y `TX: {"maceta_id":1,"humedad":…,"temp_ambiente":24.3,"hum_ambiente":61.5,"bomba":false,…}`. Si el AM2302 no responde, en su lugar aparece `AM2302: lectura invalida (…), revisar cableado en GPIO 15` y el `TX` sale sin esos dos campos. Al mandar una orden: `RX [.../comando]: {"activar_riego":true,…}` → `BOMBA ON por 5 s` → `EVENTO: {"bomba":true,…}` → 5 s después `BOMBA OFF tras 5 s` → `EVENTO: {"bomba":false,…,"duracion_seg":5}`.
 
 > **El sketch de prueba anterior** (`ESP32_GDA_prueba_riego.ino`, en `firmware/gda-nodo/`) riega solo con una regla local de 50–55 % y no procesa comandos: sirvió para validar sensor, relé y bomba, pero **es lo contrario del diseño** y no debe usarse con el backend en modo `backend` (el nodo y el backend se pisarían). Si hay que usarlo, el backend debe correr con `CONTROL_RIEGO=nodo`.
 
@@ -147,7 +147,7 @@ El conexionado completo con colores, las reglas y la calibración del sensor est
 | Backend decide (umbrales + pronóstico), riego manual, espera entre riegos, confirmación | ✅ Verificado con pruebas contra la base de datos |
 | Credencial de HiveMQ con **Publish** para el backend | ⏳ Pendiente — sin ella el backend no puede mandar órdenes |
 | Calibrar `SUELO_SECO` / `SUELO_MOJADO` | ⏳ Pendiente |
-| Lectura del AM2302 (temperatura y humedad del aire) | ⏳ Cableado, sin código. El backend y el dashboard ya lo toleran y lo muestran cuando llegue; la regla de calor extremo se activa con él |
+| Lectura del AM2302 (temperatura y humedad del aire) | 🆕 Escrita en `gda-nodo-v2` v2.1 y **compilada**; falta cargarla y probarla con el sensor. Backend y dashboard ya la procesan (verificado con pruebas): la temperatura alimenta la regla de calor extremo |
 | Buffer offline (RNF4) | ⏳ Pendiente (el backend ya acepta `measuredAt`/`source:"replay"` para cuando exista) |
 
 ---
@@ -162,6 +162,8 @@ El conexionado completo con colores, las reglas y la calibración del sensor est
 | Backend conecta pero el dashboard no muestra nada | No hay maceta con ese Node ID, o prefijos distintos entre simulador y backend | Crear maceta `nodo1`; mismo `TOPIC_PREFIX` en ambos |
 | El motor "no riega" en local | Comportamiento esperado | `MODO_ESCRITURA=false`: mirá el evento `[modo lectura]` en el historial |
 | El nodo está online pero el dashboard dice "Sin lecturas todavía" | Las lecturas llegan como `invalida` (humedad fuera de 0–100, p. ej. sin calibrar) o el nodo no manda `humedad` | Historial → pestaña **Lecturas**: si hay filas `invalida`, revisar la calibración (`SUELO_SECO`/`SUELO_MOJADO`) |
+| El dashboard no muestra temperatura ni humedad del aire | El AM2302 no responde: el log del nodo dice `AM2302: lectura invalida` | Revisar el cable de DATA a GPIO 15, VCC a 3V3, GND y la resistencia de 10 kΩ si el sensor es de 4 patas. Si el sensor está desconectado el sistema sigue regando por humedad de suelo |
+| La placa no arranca o no carga el firmware con el AM2302 conectado | GPIO 15 es un pin de arranque | Desconectar el cable verde al cargar, o mover DATA a GPIO 4 y cambiar `PIN_DHT` |
 | Humedad siempre 0 % o 100 % | FC-28 sin calibrar o A0 mal conectado | Calibrar con el log `crudo=…` (sección 6 de la documentación del nodo); revisar el cable a GPIO 34 |
 | "Regar ahora" avisa que el backend está en modo lectura (`READ_ONLY`) | `MODO_ESCRITURA=false` en tu `.env` | Esperado en local. Para regar: credencial con Publish + `MODO_ESCRITURA=true` (ver 3.4) |
 | "Regar ahora" dice `NODE_NO_COMMANDS` | El backend corre con `CONTROL_RIEGO=nodo` | Dejar el default `backend` (el modo `nodo` es solo para el sketch de prueba) |

@@ -45,6 +45,8 @@ Formato que publica el firmware (`gda-nodo-v2.ino`) cada `TELEMETRIA_MS` (30 s; 
 {
   "maceta_id": 1,
   "humedad": 42,
+  "temp_ambiente": 24.3,
+  "hum_ambiente": 61.5,
   "bomba": true,
   "rssi": -66,
   "ssid": "TP-Link_Extender",
@@ -56,12 +58,12 @@ Formato que publica el firmware (`gda-nodo-v2.ino`) cada `TELEMETRIA_MS` (30 s; 
 | Campo                           | Tipo                | Notas                                                                                                                                                   |
 | ------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `humedad`                       | número 0–100        | Humedad de suelo (%), entero ya calibrado en el nodo (FC-28). Fuera de 0–100 el backend la guarda como `invalida`. **Si el campo falta, el mensaje es solo diagnóstico**: se actualiza online/IP/RSSI pero no se registra lectura |
-| `temp_ambiente`                 | número              | °C. **Todavía no se publica**: el AM2302 está cableado pero sin código en el firmware. El backend lo tolera como `null` y el dashboard oculta la métrica                                                                                                             |
-| `hum_ambiente`                  | número 0–100        | Humedad del aire (%). **Todavía no se publica** (mismo motivo que la temperatura)                                                                                                                          |
+| `temp_ambiente`                 | número              | °C del aire (AM2302). **Opcional**: el firmware lo omite si el sensor falla o pasan 2 min sin una lectura buena; el backend lo toma como `null` y el dashboard oculta la métrica                                                                                                             |
+| `hum_ambiente`                  | número 0–100        | Humedad del aire (%), también del AM2302. Opcional, igual que la temperatura                                                                                                                          |
 | `rssi` / `ssid` / `ip` / `heap` | —                   | Diagnóstico del nodo. La `ip` es la que se usa para OTA/Telnet                                                                                          |
 | `measuredAt`                    | epoch (s), opcional | Si falta, el backend usa la hora de recepción. Reservado para retransmisión offline (RNF4, pendiente) junto con `source: "replay"`                      |
 
-Validación en el backend: valores fuera de rango físico (humedad 0–100, temperatura −40..80) se guardan marcados `invalida` y no disparan riego. Telemetría de un `nodeId` sin maceta registrada se descarta con log.
+Validación en el backend: la humedad de **suelo** fuera de 0–100 invalida toda la lectura (se guarda `invalida` y no dispara riego). La temperatura (fuera de −40..80) o la humedad del aire (fuera de 0–100) **no** invalidan la lectura: se descartan solo esos campos (quedan `null` y se anota el motivo), porque el AM2302 de vez en cuando entrega basura y un dato ambiental malo no debe frenar el riego. La temperatura alimenta la regla de **calor extremo** (temperatura ≥ umbral de la maceta, 35 °C por defecto, con el suelo a menos de mínimo + 10 %): alerta y riego breve. Telemetría de un `nodeId` sin maceta registrada se descarta con log.
 
 `bomba` (boolean) es el estado actual del relé. Es **informativa**: permite mostrar "Regando…" y corregir el estado si se perdió un evento (el firmware publica sin QoS), pero **nunca confirma una orden** (ver 3.3). Es idempotente: el mismo estado por telemetría y por evento no duplica nada.
 

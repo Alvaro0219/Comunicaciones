@@ -1,9 +1,10 @@
 /* ============================================================
-   GEMELO DIGITAL AGRICOLA (GDA) - Nodo IoT v2
+   GEMELO DIGITAL AGRICOLA (GDA) - Nodo IoT v2.1
    WiFiMulti + HiveMQ Cloud (TLS) + OTA + Telnet
 
    EL NODO NO DECIDE: MIDE Y EJECUTA.
-     - Mide la humedad del suelo (FC-28) y la publica por MQTT.
+     - Mide la humedad del suelo (FC-28) y la temperatura y
+       humedad del aire (AM2302) y las publica por MQTT.
      - Ejecuta las ordenes de riego que manda el backend y
        confirma cuando la bomba se enciende y se apaga.
    Toda la logica (umbrales, pronostico, riego automatico y
@@ -16,7 +17,9 @@
      publica  {PREFIX}/{NODO_ID}/evento      en cada cambio de la bomba
 
    Librerias (Administrar bibliotecas):
-     PubSubClient (Nick O'Leary) y ArduinoJson (Benoit Blanchon, v7.x)
+     PubSubClient (Nick O'Leary), ArduinoJson (Benoit Blanchon, v7.x) y
+     "DHT sensor library for ESPx" (beegee_tokyo) para el AM2302.
+     OJO: es la de beegee_tokyo (DHTesp.h), NO la de Adafruit (DHT.h).
    Placa: ESP32 Dev Module. Partition Scheme: Minimal SPIFFS (1.9MB APP with OTA).
    Requiere secrets.h en esta carpeta (ver secrets.h.example).
    ============================================================ */
@@ -28,6 +31,7 @@
 #include <ArduinoOTA.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <DHTesp.h>
 #include "secrets.h"
 
 /* ---------- BROKER ---------- */
@@ -53,6 +57,18 @@ const int SUELO_MOJADO = 1500;   // valor crudo con la horquilla en agua
 
 // true = imprime el valor crudo del ADC en cada medicion (util para calibrar)
 const bool LOG_CRUDO = true;
+
+/* ---------- SENSOR AMBIENTE (AM2302 / DHT22) ---------- */
+// DATA del AM2302. GPIO 15 es un pin de arranque: si la placa no bootea con el sensor
+// conectado, moverlo al GPIO 4 y cambiar este numero (ver docs/GDA_Documentacion_Nodo1.md).
+const int PIN_DHT = 15;
+
+// El AM2302 se lee cada AMBIENTE_MS en segundo plano, sin frenar el riego (tolera 2 s como minimo).
+// Si una lectura falla se conserva la ultima buena; si pasan AMBIENTE_VIGENCIA_MS sin ninguna
+// buena, temperatura y humedad del aire se OMITEN de la telemetria: asi el backend y el dashboard
+// ven que el sensor no responde, en lugar de recibir un dato viejo o inventado.
+const unsigned long AMBIENTE_MS = 5000;
+const unsigned long AMBIENTE_VIGENCIA_MS = 120000;
 
 /* ---------- RELE / BOMBA ---------- */
 const int PIN_RELE = 26;
@@ -110,6 +126,7 @@ WiFiServer telnet(23);
 WiFiClient cliente;
 WiFiClientSecure net;
 PubSubClient mqtt(net);
+DHTesp dht;
 
 char topic_telemetria[50];
 char topic_comando[50];
@@ -122,6 +139,13 @@ unsigned long tBombaFin = 0;     // millis() en que la bomba DEBE apagarse
 char ordenId[48] = "";           // commandId de la orden en curso
 int humedadActual = -1;          // ultima medicion (-1 = todavia no hubo)
 int ultimoCrudo = 0;
+
+// Ultima lectura buena del AM2302
+float temperaturaAmb = 0;
+float humedadAmb = 0;
+bool hayAmbiente = false;
+unsigned long tAmbienteOk = 0;   // millis() de la ultima lectura buena
+int fallosAmbiente = 0;          // lecturas invalidas seguidas
 
 // Evento que no se pudo publicar (MQTT caido cuando cambio la bomba).
 // Se reintenta al reconectar: sin el aviso de apagado, el backend creeria que la orden fallo.
@@ -154,6 +178,43 @@ int leerHumedadSuelo() {
   // en el FC-28, valor mas alto = tierra mas seca.
   int pct = map(ultimoCrudo, SUELO_SECO, SUELO_MOJADO, 0, 100);
   return constrain(pct, 0, 100);
+}
+
+/* ---------- SENSOR AMBIENTE (AM2302) ---------- */
+// Lee el AM2302 cada AMBIENTE_MS sin bloquear. Descarta valores imposibles: el sensor de vez en
+// cuando entrega basura, y un dato ambiental malo no debe llegar al backend.
+void servicioAmbiente() {
+  static unsigned long tUltima = 0;
+  if (millis() - tUltima < AMBIENTE_MS) return;
+  tUltima = millis();
+
+  TempAndHumidity d = dht.getTempAndHumidity();
+  bool ok = dht.getStatus() == DHTesp::ERROR_NONE
+         && !isnan(d.temperature) && !isnan(d.humidity)
+         && d.temperature >= -40 && d.temperature <= 80
+         && d.humidity >= 0 && d.humidity <= 100;
+
+  if (ok) {
+    temperaturaAmb = d.temperature;
+    humedadAmb = d.humidity;
+    tAmbienteOk = millis();
+    hayAmbiente = true;
+    if (fallosAmbiente > 0) {
+      log("AM2302 recuperado");
+      fallosAmbiente = 0;
+    }
+  } else {
+    fallosAmbiente++;
+    // Se avisa en la primera falla y despues cada ~minuto, para no inundar el log
+    if (fallosAmbiente == 1 || fallosAmbiente % 12 == 0) {
+      log("AM2302: lectura invalida (" + String(dht.getStatusString()) + "), revisar cableado en GPIO " + String(PIN_DHT));
+    }
+  }
+}
+
+// Hay una lectura ambiental lo bastante reciente como para publicarla?
+bool ambienteVigente() {
+  return hayAmbiente && (millis() - tAmbienteOk) < AMBIENTE_VIGENCIA_MS;
 }
 
 /* ---------- EVENTOS ---------- */
@@ -234,13 +295,18 @@ void publicarTelemetria() {
   JsonDocument doc;
   doc["maceta_id"] = MACETA_ID;
   doc["humedad"] = humedadActual;
+  // Si el AM2302 no responde, estos dos campos se omiten (el backend los toma como "sin dato")
+  if (ambienteVigente()) {
+    doc["temp_ambiente"] = roundf(temperaturaAmb * 10) / 10.0f;
+    doc["hum_ambiente"] = roundf(humedadAmb * 10) / 10.0f;
+  }
   doc["bomba"] = bombaEncendida;
   doc["rssi"] = WiFi.RSSI();
   doc["ssid"] = WiFi.SSID();
   doc["ip"] = WiFi.localIP().toString();
   doc["heap"] = ESP.getFreeHeap();
 
-  char buf[256];
+  char buf[320];
   serializeJson(doc, buf, sizeof(buf));
 
   if (mqtt.publish(topic_telemetria, buf)) {
@@ -325,10 +391,12 @@ void setup() {
 
   Serial.begin(115200);
   delay(500);
-  Serial.println("\n=== GDA nodo v2 (mide y ejecuta) ===");
+  Serial.println("\n=== GDA nodo v2.1 (mide y ejecuta) ===");
 
   analogReadResolution(12);
   analogSetPinAttenuation(PIN_SUELO, ADC_11db);  // rango completo 0-3.3V
+
+  dht.setup(PIN_DHT, DHTesp::AM2302);
 
   WiFi.mode(WIFI_STA);
   cargarRedes();
@@ -373,6 +441,9 @@ void loop() {
 
   // El apagado por tiempo va PRIMERO y no depende de la red.
   servicioBomba();
+
+  // El AM2302 tampoco depende de la red: se sigue leyendo aunque se caiga el WiFi.
+  servicioAmbiente();
 
   /* WiFi: chequeo cada 10 s. No en cada vuelta:
      wifiMulti.run() escanea redes y bloquea ~2 s. */

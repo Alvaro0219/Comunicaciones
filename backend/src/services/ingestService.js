@@ -7,20 +7,25 @@ import { applyPumpState } from './irrigationService.js';
 
 // Ingesta de telemetría desde el broker en la nube.
 //
-// El nodo real publica cada pocos segundos en {PREFIX}/{nodeId}/telemetria:
-//   { maceta_id, humedad, bomba, rssi, ssid, ip, heap }
-//   - humedad: % de suelo ya calibrado (0–100) — sensor FC-28
-//   - bomba:   estado actual del relé (true/false)
+// El nodo real publica periódicamente en {PREFIX}/{nodeId}/telemetria:
+//   { maceta_id, humedad, temp_ambiente, hum_ambiente, bomba, rssi, ssid, ip, heap }
+//   - humedad:       % de suelo ya calibrado (0–100) — sensor FC-28
+//   - temp_ambiente: °C del aire — AM2302
+//   - hum_ambiente:  % de humedad del aire (0–100) — AM2302
+//   - bomba:         estado actual del relé (true/false)
 //   - rssi/ssid/ip/heap: diagnóstico del nodo
-// temp_ambiente / hum_ambiente se suman cuando el AM2302 tenga código en el firmware;
-// hasta entonces llegan como null y el sistema los tolera.
+// temp_ambiente / hum_ambiente son OPCIONALES: el firmware los omite si el AM2302 falla o dejó
+// de responder, y el sistema los tolera como null (el dashboard oculta esas métricas).
 // Este módulo también acepta el contrato anterior en inglés (soilMoisture, etc.) que usa
 // el simulador, y decide qué hacer según lo que llegó.
 
+// Solo cuentan los números finitos: un texto o un NaN no es una medición
+const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+
 function normalizeTelemetry(raw) {
   const soil = raw.humedad ?? raw.soilMoisture ?? null;
-  const temp = raw.temp_ambiente ?? raw.temperature ?? null;
-  const air = raw.hum_ambiente ?? raw.airHumidity ?? null;
+  const temp = num(raw.temp_ambiente ?? raw.temperature);
+  const air = num(raw.hum_ambiente ?? raw.airHumidity);
 
   // El firmware actual no manda timestamp: se usa la hora de recepción.
   // Si el nodo algún día manda measuredAt (epoch s) — ej. replay offline — se respeta.
@@ -39,13 +44,24 @@ function normalizeTelemetry(raw) {
   return { soil, temp, air, pump, measuredAt, source, diagnostics };
 }
 
-// Rangos físicamente posibles (solo se validan los campos presentes)
-function rangeErrors({ soil, temp, air }) {
-  const errors = [];
-  if (soil < 0 || soil > 100) errors.push('humedad de suelo fuera de 0-100%');
-  if (air != null && (air < 0 || air > 100)) errors.push('humedad de aire fuera de 0-100%');
-  if (temp != null && (temp < -40 || temp > 80)) errors.push('temperatura fuera de -40..80°C');
-  return errors;
+// Rangos físicamente posibles. Solo la humedad de SUELO invalida la lectura entera: es la medida
+// que gobierna el riego. El AM2302 de vez en cuando entrega valores basura; si la temperatura o la
+// humedad del aire están fuera de rango se descartan ÚNICAMENTE esos campos (quedan null, y se
+// anota el motivo) y la lectura de suelo sigue valiendo: un dato ambiental malo no puede frenar
+// el motor de riego.
+function validateReading(t) {
+  const errors = []; // invalidan la lectura
+  const notes = [];  // se registran, pero la lectura sigue siendo válida
+  if (t.soil < 0 || t.soil > 100) errors.push('humedad de suelo fuera de 0-100%');
+  if (t.air != null && (t.air < 0 || t.air > 100)) {
+    notes.push(`humedad de aire descartada (${t.air}, fuera de 0-100%)`);
+    t.air = null;
+  }
+  if (t.temp != null && (t.temp < -40 || t.temp > 80)) {
+    notes.push(`temperatura descartada (${t.temp}, fuera de -40..80°C)`);
+    t.temp = null;
+  }
+  return { errors, notes };
 }
 
 export async function handleTelemetry(nodeId, raw) {
@@ -77,7 +93,7 @@ export async function handleTelemetry(nodeId, raw) {
     return;
   }
 
-  const errors = rangeErrors(t);
+  const { errors, notes } = validateReading(t);
 
   let reading;
   try {
@@ -90,7 +106,7 @@ export async function handleTelemetry(nodeId, raw) {
       measuredAt: t.measuredAt,
       source: t.source,
       status: errors.length ? 'invalida' : 'valida',
-      invalidReason: errors.join('; ') || undefined
+      invalidReason: [...errors, ...notes].join('; ') || undefined
     });
   } catch (err) {
     if (err.code === 11000) return; // retransmisión duplicada: ya la tenemos
