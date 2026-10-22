@@ -74,7 +74,9 @@ const unsigned long AMBIENTE_VIGENCIA_MS = 120000;
 const int PIN_RELE = 26;
 
 // La mayoria de los modulos de rele se activan con LOW.
-// Si la bomba se prende cuando deberia estar apagada, cambiar a false.
+// Con modulo activo-bajo alimentado a 5 V, los 3,3 V de un HIGH del ESP32 no
+// alcanzan para apagarlo: por eso "apagado" deja el pin flotante (INPUT) y
+// "encendido" lo lleva a LOW. Solo poner false si el modulo es activo-alto.
 const bool RELE_ACTIVO_BAJO = true;
 
 // Tope duro de seguridad por orden. El backend pide una duracion, pero el nodo
@@ -159,9 +161,18 @@ void log(const String& msg) {
 
 /* ---------- RELE ---------- */
 void escribirRele(bool encender) {
-  // Traduce "encender" al nivel electrico segun el tipo de modulo
-  bool nivel = RELE_ACTIVO_BAJO ? !encender : encender;
-  digitalWrite(PIN_RELE, nivel ? HIGH : LOW);
+  if (RELE_ACTIVO_BAJO) {
+    // Encendido: salida en LOW. Apagado: pin flotante (como desconectar IN).
+    if (encender) {
+      digitalWrite(PIN_RELE, LOW);
+      pinMode(PIN_RELE, OUTPUT);
+    } else {
+      pinMode(PIN_RELE, INPUT);
+    }
+    return;
+  }
+  pinMode(PIN_RELE, OUTPUT);
+  digitalWrite(PIN_RELE, encender ? HIGH : LOW);
 }
 
 /* ---------- SENSOR SUELO ---------- */
@@ -383,10 +394,7 @@ void reconectarMQTT() {
 
 /* ---------- SETUP ---------- */
 void setup() {
-  // Rele apagado ANTES que nada: fijar el nivel y despues configurar
-  // el pin como salida evita un pulso que prenda la bomba al arrancar
-  escribirRele(false);
-  pinMode(PIN_RELE, OUTPUT);
+  // Rele apagado ANTES que nada, para que la bomba no arranque al encender
   escribirRele(false);
 
   Serial.begin(115200);
