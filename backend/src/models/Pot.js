@@ -23,6 +23,15 @@ const PotSchema = new mongoose.Schema({
     label: { type: String, trim: true }
   },
 
+  // Una "zona" del vivero = un nodo con sus límites de humedad. Las macetas de la zona
+  // comparten esos límites y son solo descriptivas (no generan mensajes propios).
+  species: { type: String, trim: true, default: '' },
+  plants: [{ _id: false, name: { type: String, trim: true, required: true } }],
+
+  // Zona de demostración: datos de ejemplo sin nodo físico (riego simulado, sin chequeo
+  // de sensores). No se puede activar desde la API; la crea scripts/seedDemo.js.
+  isDemo: { type: Boolean, default: false, index: true },
+
   isActive: { type: Boolean, default: true, index: true },
 
   // Estado de conectividad y última lectura (snapshot para el dashboard)

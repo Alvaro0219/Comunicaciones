@@ -21,7 +21,7 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     isAuthenticated: (s) => !!s.accessToken,
     role: (s) => s.user?.role || null,
-    // Visualizador: solo lectura (no crea macetas, no fuerza riego, no configura)
+    // Visualizador: solo lectura (no crea zonas, no fuerza riego, no configura)
     canOperate: (s) => ['admin', 'tecnico'].includes(s.user?.role)
   },
   actions: {

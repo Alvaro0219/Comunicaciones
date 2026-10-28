@@ -2,11 +2,19 @@
   <q-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)">
     <q-card class="gda-pot-dialog">
       <q-card-section>
-        <div class="text-h6">{{ isEdit ? 'Editar maceta' : 'Nueva maceta' }}</div>
+        <div class="text-h6">{{ isEdit ? 'Editar zona' : 'Nueva zona' }}</div>
       </q-card-section>
 
       <q-card-section class="q-gutter-y-sm">
-        <q-input v-model="form.name" label="Nombre" dense outlined :rules="[v => !!v || 'Requerido']" />
+        <q-input v-model="form.name" label="Nombre de la zona" dense outlined :rules="[v => !!v || 'Requerido']" />
+        <q-input
+          v-model="form.species" label="Especie o cultivo" dense outlined
+          hint="Las macetas de la zona comparten estos límites de humedad"
+        />
+        <q-input
+          v-model="form.plantsText" type="textarea" autogrow label="Macetas de la zona" dense outlined
+          hint="Una por línea (opcional). Son descriptivas: el nodo mide la zona completa"
+        />
         <q-input
           v-model="form.nodeId" label="ID del nodo (ESP32)" dense outlined
           :disable="isEdit"
@@ -50,7 +58,7 @@
           </div>
         </div>
 
-        <q-toggle v-if="isEdit" v-model="form.isActive" label="Maceta activa" />
+        <q-toggle v-if="isEdit" v-model="form.isActive" label="Zona activa" />
       </q-card-section>
 
       <q-card-actions align="right">
@@ -75,6 +83,8 @@ const isEdit = computed(() => !!props.pot);
 
 const defaults = () => ({
   name: '',
+  species: '',
+  plantsText: '',
   nodeId: '',
   minMoisture: 30,
   maxMoisture: 70,
@@ -96,6 +106,8 @@ watch(() => [props.modelValue, props.pot], () => {
   if (props.pot) {
     Object.assign(base, {
       name: props.pot.name,
+      species: props.pot.species || '',
+      plantsText: (props.pot.plants || []).map(p => p.name).join('\n'),
       nodeId: props.pot.nodeId,
       minMoisture: props.pot.minMoisture,
       maxMoisture: props.pot.maxMoisture,
@@ -115,6 +127,8 @@ watch(() => [props.modelValue, props.pot], () => {
 function submit() {
   const payload = {
     name: form.name,
+    species: form.species.trim(),
+    plants: form.plantsText.split('\n').map(n => n.trim()).filter(Boolean).map(name => ({ name })),
     minMoisture: form.minMoisture,
     maxMoisture: form.maxMoisture,
     irrigationDurationSec: form.irrigationDurationSec,

@@ -12,6 +12,7 @@ async function checkSensorTimeouts() {
   const cutoff = new Date(Date.now() - env.sensorTimeoutMin * 60 * 1000);
   const silent = await Pot.find({
     isActive: true,
+    isDemo: { $ne: true },
     lastSeenAt: { $ne: null, $lt: cutoff }
   });
 

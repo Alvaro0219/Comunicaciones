@@ -2,20 +2,22 @@
   <div class="gda-page-shell">
     <div class="gda-page-header">
       <div>
-        <h1 class="gda-page-title">Macetas</h1>
-        <p class="gda-page-subtitle">Gestión de macetas y sus nodos</p>
+        <h1 class="gda-page-title">Zonas</h1>
+        <p class="gda-page-subtitle">Gestión de zonas: cada una con su nodo, su especie y sus macetas</p>
       </div>
       <q-btn
         v-if="auth.canOperate"
-        color="primary" icon="add" label="Nueva maceta"
+        color="primary" icon="add" label="Nueva zona"
         @click="openCreate"
       />
     </div>
 
     <div class="gda-section-card">
-      <LoadingState :loading="loading" :empty="!loading && items.length === 0" empty-label="No hay macetas aún." empty-icon="potted_plant">
+      <q-toggle v-model="showInactive" label="Mostrar zonas desactivadas" class="q-mb-sm" />
+      <LoadingState :loading="loading" :empty="!loading && visibleItems.length === 0" empty-label="No hay zonas aún." empty-icon="grass">
         <q-table
-          :rows="items" :columns="columns" row-key="_id" flat
+          
+          :rows="visibleItems" :columns="columns" row-key="_id" flat
           :pagination="{ rowsPerPage: 20 }"
         >
           <template #body-cell-online="props">
@@ -26,6 +28,7 @@
           <template #body-cell-isActive="props">
             <q-td :props="props">
               <q-badge :color="props.row.isActive ? 'primary' : 'grey-5'" :label="props.row.isActive ? 'activa' : 'inactiva'" />
+              <q-badge v-if="props.row.isDemo" outline color="warning" label="ejemplo" class="q-ml-xs" />
             </q-td>
           </template>
           <template #body-cell-actions="props">
@@ -47,7 +50,7 @@
     <q-dialog v-model="showCredentials" persistent>
       <q-card style="width: 520px; max-width: 95vw">
         <q-card-section>
-          <div class="text-h6">Maceta registrada</div>
+          <div class="text-h6">Zona registrada</div>
           <div class="text-caption text-grey-7">
             El sistema va a procesar la telemetría que llegue al broker con este Node ID.
           </div>
@@ -69,9 +72,10 @@
     <!-- Confirmación de borrado -->
     <q-dialog v-model="showDelete">
       <q-card style="width: 380px">
-        <q-card-section class="text-h6">Eliminar maceta</q-card-section>
+        <q-card-section class="text-h6">Eliminar zona</q-card-section>
         <q-card-section>
-          Se desactivará "{{ deleting?.name }}" y dejará de procesar telemetría. ¿Continuar?
+          <template v-if="deleting?.isActive">Se desactivará "{{ deleting?.name }}" y dejará de procesar telemetría. Después podés eliminarla definitivamente.</template>
+          <template v-else>Se eliminará definitivamente "{{ deleting?.name }}" con sus lecturas, riegos y alertas. No se puede deshacer.</template>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" v-close-popup />
@@ -83,7 +87,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '../../stores/auth.js';
 import { fetchAllPots, createPot, updatePot, deletePot } from '../../services/api.js';
 import { useCrudResource } from '../../composables/useCrudResource.js';
@@ -91,6 +95,7 @@ import LoadingState from '../../components/LoadingState.vue';
 import PotDialog from '../../components/PotDialog.vue';
 
 const auth = useAuthStore();
+const showInactive = ref(false);
 
 const {
   items, loading, saving, reload,
@@ -99,14 +104,17 @@ const {
   fetchFn: fetchAllPots,
   createFn: createPot,
   updateFn: updatePot,
-  deleteFn: deletePot,
-  label: 'la maceta'
+  deleteFn: (id) => deletePot(id, deleting.value?.isActive === false),
+  label: 'la zona'
 });
 
 onMounted(reload);
+const visibleItems = computed(() => (showInactive.value ? items.value : items.value.filter(p => p.isActive)));
 
 const columns = [
   { name: 'name', label: 'Nombre', field: 'name', align: 'left', sortable: true },
+  { name: 'species', label: 'Especie', field: 'species', align: 'left', format: v => v || '—' },
+  { name: 'plants', label: 'Macetas', field: row => row.plants?.length || 0, align: 'center' },
   { name: 'nodeId', label: 'Nodo', field: 'nodeId', align: 'left' },
   { name: 'online', label: 'Conexión', field: 'online', align: 'center' },
   { name: 'minMoisture', label: 'Hum. mín', field: 'minMoisture', align: 'center', format: v => `${v}%` },

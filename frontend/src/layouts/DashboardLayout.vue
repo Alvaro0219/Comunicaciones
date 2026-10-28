@@ -82,7 +82,7 @@ const initials = computed(() =>
 const navItems = computed(() => {
   const items = [
     { path: '/dashboard', label: 'Dashboard', icon: 'space_dashboard' },
-    { path: '/dashboard/pots', label: 'Macetas', icon: 'potted_plant' },
+    { path: '/dashboard/pots', label: 'Zonas', icon: 'grass' },
     { path: '/dashboard/alerts', label: 'Alertas', icon: 'notifications' },
     { path: '/dashboard/settings', label: 'Ajustes', icon: 'settings' }
   ];

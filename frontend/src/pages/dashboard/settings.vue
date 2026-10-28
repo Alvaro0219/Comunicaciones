@@ -58,7 +58,7 @@ const types = [
   { key: 'critica', label: 'Crítica', caption: 'Humedad bajo el mínimo sin lluvia prevista (se riega)' },
   { key: 'preventiva', label: 'Preventiva', caption: 'Humedad baja pero con lluvia prevista (riego pospuesto)' },
   { key: 'calor_extremo', label: 'Calor extremo', caption: 'Temperatura alta + humedad baja' },
-  { key: 'fallo_sensor', label: 'Fallo de sensor', caption: 'Sin datos de una maceta por más de 15 minutos' },
+  { key: 'fallo_sensor', label: 'Fallo de sensor', caption: 'Sin datos de una zona por más de 15 minutos' },
   { key: 'exceso_humedad', label: 'Exceso de humedad', caption: 'Humedad por sobre el máximo configurado' }
 ];
 

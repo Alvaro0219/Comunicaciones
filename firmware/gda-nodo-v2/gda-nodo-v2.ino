@@ -52,8 +52,8 @@ const int PIN_SUELO = 34;
 
 // CALIBRACION: reemplazar por los valores medidos con TU sensor
 // (ver docs/GDA_Documentacion_Nodo1.md, seccion 6).
-const int SUELO_SECO   = 3500;   // valor crudo con la horquilla al aire
-const int SUELO_MOJADO = 1500;   // valor crudo con la horquilla en agua
+const int SUELO_SECO   = 4095;   // valor crudo con la horquilla al aire
+const int SUELO_MOJADO = 1925;   // valor crudo con la horquilla en agua
 
 // true = imprime el valor crudo del ADC en cada medicion (util para calibrar)
 const bool LOG_CRUDO = true;

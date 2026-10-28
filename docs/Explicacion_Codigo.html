@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nodo GDA explicado: qué hace cada parte del código</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f2f5ef; --surface:#fbfcf9; --ink:#17251c; --ink-soft:#4a5b50; --line:#cfd8cb;
+  --green:#2f6b3a; --green-bg:#e3eedf; --blue:#245f9e; --blue-bg:#e0ebf6;
+  --amber:#8a5a00; --amber-bg:#f8ecd0; --code-bg:#e9eee5;
+  --head:"Bricolage Grotesque","IBM Plex Sans",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101812; --surface:#17211a; --ink:#e6eee6; --ink-soft:#a3b3a7; --line:#2b3a2f;
+    --green:#7fcf8c; --green-bg:#1d3023; --blue:#8bbbea; --blue-bg:#182a3c;
+    --amber:#e8b95a; --amber-bg:#352a12; --code-bg:#0d130f; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101812; --surface:#17211a; --ink:#e6eee6; --ink-soft:#a3b3a7; --line:#2b3a2f;
+  --green:#7fcf8c; --green-bg:#1d3023; --blue:#8bbbea; --blue-bg:#182a3c;
+  --amber:#e8b95a; --amber-bg:#352a12; --code-bg:#0d130f; color-scheme:dark;
+}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 16px);scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.65}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px 80px;display:grid;grid-template-columns:minmax(0,1fr);gap:0 56px}
+@media (min-width:980px){.wrap{grid-template-columns:230px minmax(0,1fr)}}
+h1,h2,h3{font-family:var(--head);line-height:1.15;margin:0}
+h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:700;letter-spacing:-.02em}
+h2{font-size:1.75rem;font-weight:700;letter-spacing:-.01em;margin-bottom:.4rem}
+h3{font-size:1.15rem;font-weight:500;margin:1.8rem 0 .4rem}
+p{margin:.6rem 0;max-width:68ch}
+a{color:var(--blue)}
+code{font-family:var(--mono);font-size:.88em;background:var(--code-bg);padding:.1em .35em;border-radius:4px}
+pre{font-family:var(--mono);font-size:.84rem;line-height:1.55;background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;margin:1rem 0}
+pre code{background:none;padding:0;font-size:inherit}
+/* hero */
+header.hero{grid-column:1/-1;padding:48px 0 28px}
+header.hero p.sub{font-size:1.15rem;color:var(--ink-soft);max-width:62ch;margin-top:14px}
+.diagram{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px;margin-top:26px}
+.diagram svg{display:block;min-width:620px;width:100%;height:auto}
+.diagram figcaption{font-size:.9rem;color:var(--ink-soft);padding:10px 6px 2px}
+figure{margin:0}
+/* nav */
+nav.toc{font-size:.93rem;margin-bottom:28px}
+nav.toc strong{font-family:var(--head);font-size:1rem;display:block;margin-bottom:8px}
+nav.toc ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px}
+nav.toc a{color:var(--ink-soft);text-decoration:none;border-bottom:1px solid transparent}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--ink);border-bottom-color:var(--green)}
+@media (min-width:980px){
+  nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 20px);align-self:start;max-height:calc(100vh - 40px);overflow:auto}
+  nav.toc ol{display:block}
+  nav.toc li{margin:0 0 6px}
+}
+main{min-width:0}
+section{padding:36px 0 8px;border-top:1px solid var(--line)}
+section:first-of-type{border-top:none;padding-top:8px}
+.lead{font-size:1.08rem}
+/* callouts */
+.note{border-left:4px solid var(--green);background:var(--green-bg);padding:10px 16px;border-radius:0 8px 8px 0;margin:1rem 0;max-width:72ch}
+.note p{margin:.2rem 0}
+.note.warn{border-color:var(--amber);background:var(--amber-bg)}
+.note.net{border-color:var(--blue);background:var(--blue-bg)}
+.note b.tag{font-family:var(--head);font-weight:700}
+/* tables */
+.tablewrap{overflow-x:auto;margin:1rem 0}
+table{border-collapse:collapse;width:100%;font-size:.95rem;min-width:520px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--head);font-weight:500;background:var(--surface)}
+/* three ideas */
+.ideas{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:22px 0 4px}
+.ideas div{border-top:3px solid var(--green);padding-top:8px}
+.ideas div:nth-child(2){border-color:var(--amber)}
+.ideas div:nth-child(3){border-color:var(--blue)}
+.ideas h3{margin:0 0 4px;font-size:1.05rem}
+.ideas p{margin:0;font-size:.95rem;color:var(--ink-soft)}
+/* tools */
+.tool{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:1.2rem 0}
+.tool h3{margin-top:0}
+.row{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end;margin:10px 0}
+label{font-size:.88rem;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px}
+input[type=number]{font:inherit;font-family:var(--mono);width:110px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--green)}
+button{font:inherit;font-weight:600;padding:8px 14px;border-radius:8px;border:1px solid var(--green);background:var(--green);color:var(--surface);cursor:pointer}
+button.alt{background:transparent;color:var(--ink);border-color:var(--line)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.bar{height:16px;border-radius:8px;background:var(--code-bg);border:1px solid var(--line);overflow:hidden;margin:8px 0}
+.bar i{display:block;height:100%;width:0;background:var(--blue)}
+.bar.soil i{background:var(--green)}
+.big{font-family:var(--head);font-size:2rem;font-weight:700}
+.log{font-family:var(--mono);font-size:.82rem;background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:110px;max-height:240px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+.chk{flex-direction:row;align-items:center;gap:8px;color:var(--ink)}
+ol.steps{padding-left:1.3rem;max-width:70ch}
+ol.steps li{margin:.5rem 0}
+details{border:1px solid var(--line);border-radius:8px;padding:8px 14px;background:var(--surface);margin:.6rem 0;max-width:72ch}
+summary{cursor:pointer;font-weight:600}
+footer{grid-column:1/-1;margin-top:40px;padding-top:16px;border-top:1px solid var(--line);color:var(--ink-soft);font-size:.9rem}
+/* svg */
+.box{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.box.g{stroke:var(--green)} .box.b{stroke:var(--blue)} .box.a{stroke:var(--amber)}
+.box.main{fill:var(--green-bg);stroke:var(--green);stroke-width:2.5}
+.t1{font-family:var(--head);font-weight:700;font-size:15px;fill:var(--ink)}
+.t2{font-family:var(--body);font-size:12px;fill:var(--ink-soft)}
+.t3{font-family:var(--mono);font-size:11px;fill:var(--ink-soft)}
+.arr{stroke:var(--ink-soft);stroke-width:1.6;fill:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>Qué hace cada parte del código del nodo GDA</h1>
+  <p class="sub">Un ESP32 que mide la humedad del suelo y el clima del aire, los envía por internet y enciende una bomba de riego solo cuando el backend se lo ordena. Esta guía recorre el sketch de arriba abajo, en el mismo orden en que está escrito.</p>
+  <figure class="diagram">
+    <svg viewBox="0 0 760 310" role="img" aria-labelledby="dt dd">
+      <title id="dt">Mapa del sistema</title>
+      <desc id="dd">Los sensores de suelo y aire envían medidas al ESP32. El ESP32 publica telemetría y eventos al broker HiveMQ y recibe comandos. El backend se comunica con HiveMQ y decide cuándo regar. El ESP32 enciende el relé y la bomba.</desc>
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink-soft)"/>
+        </marker>
+      </defs>
+      <rect class="box g" x="16" y="40" width="170" height="54" rx="8"/>
+      <text class="t1" x="101" y="64" text-anchor="middle">Sensor de suelo</text>
+      <text class="t2" x="101" y="82" text-anchor="middle">FC-28 (humedad)</text>
+      <rect class="box g" x="16" y="116" width="170" height="54" rx="8"/>
+      <text class="t1" x="101" y="140" text-anchor="middle">Sensor de aire</text>
+      <text class="t2" x="101" y="158" text-anchor="middle">AM2302 (temp. y hum.)</text>
+      <rect class="box b" x="16" y="212" width="170" height="54" rx="8"/>
+      <text class="t1" x="101" y="236" text-anchor="middle">Relé y bomba</text>
+      <text class="t2" x="101" y="254" text-anchor="middle">riega la maceta</text>
+
+      <rect class="box main" x="270" y="30" width="160" height="250" rx="12"/>
+      <text class="t1" x="350" y="130" text-anchor="middle" style="font-size:20px">ESP32</text>
+      <text class="t2" x="350" y="152" text-anchor="middle">el nodo</text>
+      <text class="t3" x="350" y="182" text-anchor="middle">mide</text>
+      <text class="t3" x="350" y="198" text-anchor="middle">ejecuta</text>
+      <text class="t3" x="350" y="214" text-anchor="middle">avisa</text>
+
+      <path class="arr" d="M186,67 H268" marker-end="url(#ah)"/>
+      <text class="t3" x="227" y="60" text-anchor="middle">mide</text>
+      <path class="arr" d="M186,143 H268" marker-end="url(#ah)"/>
+      <text class="t3" x="227" y="136" text-anchor="middle">mide</text>
+      <path class="arr" d="M270,239 H188" marker-end="url(#ah)"/>
+      <text class="t3" x="229" y="232" text-anchor="middle">on / off</text>
+
+      <rect class="box b" x="580" y="40" width="164" height="76" rx="8"/>
+      <text class="t1" x="662" y="74" text-anchor="middle">HiveMQ Cloud</text>
+      <text class="t2" x="662" y="94" text-anchor="middle">broker MQTT (TLS)</text>
+      <rect class="box a" x="580" y="190" width="164" height="76" rx="8"/>
+      <text class="t1" x="662" y="224" text-anchor="middle">Backend</text>
+      <text class="t2" x="662" y="244" text-anchor="middle">es quien decide</text>
+
+      <path class="arr" d="M430,64 H578" marker-end="url(#ah)"/>
+      <text class="t3" x="505" y="57" text-anchor="middle">telemetría y evento</text>
+      <path class="arr" d="M580,98 H432" marker-end="url(#ah)"/>
+      <text class="t3" x="505" y="116" text-anchor="middle">comando</text>
+      <path class="arr" d="M662,118 V188" marker-start="url(#ah)" marker-end="url(#ah)"/>
+      <text class="t3" x="674" y="158">MQTT</text>
+    </svg>
+    <figcaption>El nodo solo habla con el broker. El backend es el único que decide cuándo regar.</figcaption>
+  </figure>
+  <div class="ideas">
+    <div><h3>El nodo no decide</h3><p>No tiene reglas de riego. Mide, informa y ejecuta lo que le piden.</p></div>
+    <div><h3>La seguridad va primero</h3><p>La bomba tiene un tope de tiempo y se apaga sola, pase lo que pase con la red.</p></div>
+    <div><h3>Nada se queda esperando</h3><p>El código evita quedarse bloqueado, para poder apagar la bomba a tiempo.</p></div>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Índice">
+  <strong>Índice</strong>
+  <ol>
+    <li><a href="#cabecera">Cabecera y librerías</a></li>
+    <li><a href="#config">Configuración</a></li>
+    <li><a href="#cert">Certificado TLS</a></li>
+    <li><a href="#estado">Objetos y estado</a></li>
+    <li><a href="#log">Log</a></li>
+    <li><a href="#rele">Relé</a></li>
+    <li><a href="#suelo">Sensor de suelo</a></li>
+    <li><a href="#ambiente">Sensor de aire</a></li>
+    <li><a href="#eventos">Eventos</a></li>
+    <li><a href="#bomba">Bomba</a></li>
+    <li><a href="#telemetria">Telemetría</a></li>
+    <li><a href="#wifi">WiFi</a></li>
+    <li><a href="#mqtt">MQTT</a></li>
+    <li><a href="#setup">setup()</a></li>
+    <li><a href="#loop">loop()</a></li>
+    <li><a href="#resumen">Seguridad: resumen</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<section id="cabecera">
+  <h2>Cabecera y librerías</h2>
+  <p class="lead">El bloque de comentarios del principio es el “manual” del sketch: dice qué es, qué hace y qué librerías hay que instalar. Después vienen los <code>#include</code>, que son las herramientas que el código toma prestadas.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Librería</th><th>Para qué sirve</th></tr></thead>
+    <tbody>
+      <tr><td><code>WiFi.h</code>, <code>WiFiMulti.h</code></td><td>Conectarse a WiFi. <code>WiFiMulti</code> permite guardar varias redes y elige la mejor disponible.</td></tr>
+      <tr><td><code>WiFiClientSecure.h</code></td><td>Conexión cifrada (TLS), necesaria porque HiveMQ Cloud exige el puerto seguro 8883.</td></tr>
+      <tr><td><code>ESPmDNS.h</code></td><td>Permite encontrar la placa por nombre (<code>gda-nodo1.local</code>) en vez de por IP.</td></tr>
+      <tr><td><code>ArduinoOTA.h</code></td><td>Actualizar el programa por WiFi, sin cable USB.</td></tr>
+      <tr><td><code>PubSubClient.h</code></td><td>Hablar el protocolo MQTT (publicar y suscribirse).</td></tr>
+      <tr><td><code>ArduinoJson.h</code></td><td>Armar y leer mensajes en formato JSON.</td></tr>
+      <tr><td><code>DHTesp.h</code></td><td>Leer el sensor AM2302 (de beegee_tokyo, no la de Adafruit).</td></tr>
+      <tr><td><code>secrets.h</code></td><td>Archivo aparte con claves WiFi, usuario y clave MQTT y clave OTA. Así no quedan en el código principal.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note warn"><p><b class="tag">Ojo:</b> <code>secrets.h</code> no está en lo que compartiste. Si no existe en la carpeta del sketch, no compila. Hay que crearlo a partir de <code>secrets.h.example</code>.</p></div>
+</section>
+
+<section id="config">
+  <h2>Configuración</h2>
+  <p class="lead">Son constantes: valores que se ajustan una vez y no cambian mientras el programa corre.</p>
+  <h3>Broker, identidad y prefijo</h3>
+<pre><code>const char* MQTT_HOST = "...s1.eu.hivemq.cloud";
+const int   MQTT_PORT = 8883;
+const char* NODO_ID   = "nodo1";
+const char* PREFIX    = "gda/prod";</code></pre>
+  <p><code>MQTT_HOST</code> y <code>MQTT_PORT</code> son la dirección del servidor MQTT. <code>NODO_ID</code> es el nombre de este nodo y debe coincidir con el de la maceta en el dashboard. <code>MACETA_ID</code> es el número de maceta que viaja dentro de cada mensaje.</p>
+  <p><code>PREFIX</code> arma el “camino” de los mensajes. Con <code>gda/prod</code> el nodo usa el sistema real; con <code>gda/dev-nombre</code> alguien puede probar sin molestar a producción. Debe ser igual al <code>TOPIC_PREFIX</code> del backend.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Topic (canal)</th><th>Quién publica</th><th>Contenido</th></tr></thead>
+    <tbody>
+      <tr><td><code>gda/prod/nodo1/telemetria</code></td><td>El nodo</td><td>Medidas periódicas</td></tr>
+      <tr><td><code>gda/prod/nodo1/evento</code></td><td>El nodo</td><td>Aviso cada vez que la bomba se enciende o apaga</td></tr>
+      <tr><td><code>gda/prod/nodo1/comando</code></td><td>El backend</td><td>Órdenes de riego</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Pines y calibración del suelo</h3>
+  <p>El sensor de suelo va al <strong>GPIO 34</strong>, el AM2302 al <strong>GPIO 15</strong> y el relé al <strong>GPIO 26</strong>. <code>SUELO_SECO = 4095</code> y <code>SUELO_MOJADO = 1925</code> son los valores crudos medidos con el sensor al aire y en agua. Cada sensor es distinto, así que hay que medirlos con el propio. <code>LOG_CRUDO = true</code> imprime el valor crudo en cada medición para facilitar esa calibración.</p>
+  <div class="note warn"><p><b class="tag">Ojo:</b> el GPIO 15 es un pin que el ESP32 usa al arrancar. Si la placa no inicia con el sensor conectado, el propio comentario del código sugiere pasarlo al GPIO 4.</p></div>
+
+  <h3>Tiempos y límites</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Constante</th><th>Valor</th><th>Significado</th></tr></thead>
+    <tbody>
+      <tr><td><code>AMBIENTE_MS</code></td><td>5000</td><td>Lee el AM2302 cada 5 segundos.</td></tr>
+      <tr><td><code>AMBIENTE_VIGENCIA_MS</code></td><td>120000</td><td>Si pasan 2 minutos sin una lectura buena, el dato de aire deja de enviarse.</td></tr>
+      <tr><td><code>DURACION_MAX_S</code></td><td>120</td><td>Tope duro de riego por orden: 2 minutos.</td></tr>
+      <tr><td><code>TELEMETRIA_MS</code></td><td>30000</td><td>Envía medidas cada 30 s (pruebas). En producción, 600000 = 10 min.</td></tr>
+    </tbody>
+  </table></div>
+  <p>La constante <code>RELE_ACTIVO_BAJO = true</code> se explica en la sección del relé.</p>
+</section>
+
+<section id="cert">
+  <h2>Certificado TLS</h2>
+  <p class="lead">El bloque largo de letras entre <code>BEGIN CERTIFICATE</code> y <code>END CERTIFICATE</code> es el certificado raíz ISRG Root X1 de Let’s Encrypt.</p>
+  <div class="note"><p><b class="tag">En simple:</b> es como llevar una credencial de la autoridad que firma el sitio. Cuando el ESP32 se conecta a HiveMQ, compara lo que recibe con este certificado y comprueba que realmente habla con HiveMQ y no con un impostor. Después, toda la conversación viaja cifrada.</p></div>
+  <p>Se usa más abajo, en <code>net.setCACert(CA_CERT)</code>. Los certificados raíz tienen fecha de vencimiento; este indica 2035.</p>
+</section>
+
+<section id="estado">
+  <h2>Objetos y estado</h2>
+  <p class="lead">Aquí se crean los “aparatos” de software y las variables que recuerdan qué está pasando.</p>
+  <h3>Objetos</h3>
+<pre><code>WiFiMulti wifiMulti;          // maneja varias redes
+WiFiServer telnet(23);         // puerta para ver el log por red
+WiFiClient cliente;            // el cliente telnet conectado
+WiFiClientSecure net;          // conexión cifrada
+PubSubClient mqtt(net);        // cliente MQTT sobre esa conexión
+DHTesp dht;                    // sensor de aire</code></pre>
+  <p>Los tres <code>topic_*</code> son espacios de texto que se llenan en <code>setup()</code> con la ruta completa de cada canal.</p>
+  <h3>Variables de estado: la memoria del nodo</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Variable</th><th>Qué recuerda</th></tr></thead>
+    <tbody>
+      <tr><td><code>bombaEncendida</code></td><td>Si la bomba está funcionando ahora.</td></tr>
+      <tr><td><code>tBombaInicio</code>, <code>tBombaFin</code></td><td>Cuándo empezó el riego y el instante exacto en que debe terminar.</td></tr>
+      <tr><td><code>ordenId</code></td><td>El <code>commandId</code> de la orden en curso, para que el backend sepa a qué orden corresponde cada aviso.</td></tr>
+      <tr><td><code>humedadActual</code></td><td>Última humedad de suelo medida (−1 significa que todavía no hubo medición).</td></tr>
+      <tr><td><code>ultimoCrudo</code></td><td>Último valor crudo del sensor, para calibrar.</td></tr>
+      <tr><td><code>temperaturaAmb</code>, <code>humedadAmb</code>, <code>hayAmbiente</code></td><td>Última lectura buena del AM2302 y si existe alguna.</td></tr>
+      <tr><td><code>tAmbienteOk</code>, <code>fallosAmbiente</code></td><td>Cuándo fue la última lectura buena y cuántas fallas seguidas hubo.</td></tr>
+      <tr><td><code>eventoPendiente</code></td><td>Un aviso que no pudo enviarse porque MQTT estaba caído.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note net"><p><b class="tag">Detalle técnico:</b> el tiempo se mide con <code>millis()</code>, que cuenta los milisegundos desde que arrancó la placa. Todo el código usa este reloj en lugar de <code>delay()</code> largos.</p></div>
+</section>
+
+<section id="log">
+  <h2>Log: hablar por cable y por WiFi</h2>
+<pre><code>void log(const String&amp; msg) {
+  Serial.println(msg);
+  if (cliente &amp;&amp; cliente.connected()) cliente.println(msg);
+}</code></pre>
+  <p>Cada vez que el programa quiere dejar un mensaje, lo escribe en el monitor serie (USB) y, si hay alguien conectado por telnet al puerto 23, también se lo manda ahí. Eso permite ver qué hace el nodo sin cable, desde otra computadora de la misma red.</p>
+</section>
+
+<section id="rele">
+  <h2>Relé: el interruptor de la bomba</h2>
+  <p class="lead"><code>escribirRele(bool encender)</code> es la única función que toca el pin del relé. Todo el resto del programa pasa por ella.</p>
+<pre><code>if (RELE_ACTIVO_BAJO) {
+  if (encender) {
+    digitalWrite(PIN_RELE, LOW);
+    pinMode(PIN_RELE, OUTPUT);
+  } else {
+    pinMode(PIN_RELE, INPUT);   // pin flotante
+  }
+  return;
+}
+pinMode(PIN_RELE, OUTPUT);
+digitalWrite(PIN_RELE, encender ? HIGH : LOW);</code></pre>
+  <p>Muchos módulos de relé se activan con una señal <strong>baja</strong> (LOW), al revés de lo intuitivo. Además, si el módulo se alimenta a 5 V, los 3,3 V de un HIGH del ESP32 no alcanzan para apagarlo bien. La solución del código:</p>
+  <ul>
+    <li><strong>Encender:</strong> pone el pin en LOW y recién después lo convierte en salida.</li>
+    <li><strong>Apagar:</strong> deja el pin como entrada, “flotando”, equivalente a desconectar el cable IN del relé.</li>
+  </ul>
+  <p>Si tu módulo fuera activo-alto, se cambia <code>RELE_ACTIVO_BAJO</code> a <code>false</code> y se usa HIGH/LOW normales.</p>
+</section>
+
+<section id="suelo">
+  <h2>Sensor de suelo (FC-28)</h2>
+  <p class="lead"><code>leerHumedadSuelo()</code> devuelve un porcentaje de 0 a 100.</p>
+  <ol class="steps">
+    <li><strong>Promedia 10 lecturas</strong>, con 20 ms entre cada una (unos 0,2 s en total), porque este sensor es muy ruidoso.</li>
+    <li><strong>Convierte a porcentaje</strong> con <code>map()</code>, usando los valores de calibración. El rango está “invertido” a propósito: en el FC-28, un valor crudo más alto significa tierra más seca.</li>
+    <li><strong>Recorta</strong> el resultado con <code>constrain()</code> para que nunca salga de 0 a 100.</li>
+  </ol>
+  <div class="tool">
+    <h3>Probalo: de valor crudo a porcentaje</h3>
+    <p>Mové el valor crudo y mirá el porcentaje que calcularía el nodo. Podés cambiar los valores de calibración.</p>
+    <div class="row">
+      <label>SUELO_SECO <input type="number" id="c-seco" value="4095" min="0" max="4095"></label>
+      <label>SUELO_MOJADO <input type="number" id="c-mojado" value="1925" min="0" max="4095"></label>
+    </div>
+    <label for="c-raw">Valor crudo del sensor: <b id="c-rawout" style="color:var(--ink)">3000</b></label>
+    <input type="range" id="c-raw" min="0" max="4095" value="3000">
+    <div class="bar soil" aria-hidden="true"><i id="c-bar"></i></div>
+    <div><span class="big" id="c-pct">0%</span> <span id="c-cuenta" style="color:var(--ink-soft);font-family:var(--mono);font-size:.85rem"></span></div>
+  </div>
+  <div class="note net"><p><b class="tag">Detalle técnico:</b> el GPIO 34 pertenece al convertidor ADC1 del ESP32, que sigue funcionando con el WiFi encendido. En <code>setup()</code> se configura en 12 bits (0 a 4095) y con atenuación de 11 dB para leer el rango completo de 0 a 3,3 V.</p></div>
+</section>
+
+<section id="ambiente">
+  <h2>Sensor de aire (AM2302)</h2>
+  <p class="lead"><code>servicioAmbiente()</code> se ejecuta en cada vuelta del programa, pero solo trabaja cada 5 segundos.</p>
+  <ol class="steps">
+    <li><strong>Control de tiempo:</strong> si no pasaron 5 s desde la última lectura, sale sin hacer nada (así no frena al resto).</li>
+    <li><strong>Lee</strong> temperatura y humedad.</li>
+    <li><strong>Valida:</strong> sin error del sensor, sin valores “no numéricos” y dentro de rangos posibles (−40 a 80 °C, 0 a 100 %). Un dato imposible nunca llega al backend.</li>
+    <li><strong>Si es buena:</strong> la guarda, anota la hora y avisa “AM2302 recuperado” si venía fallando.</li>
+    <li><strong>Si es mala:</strong> cuenta la falla. Avisa en la primera y luego cada 12 fallas (aproximadamente cada minuto), para no llenar el log.</li>
+  </ol>
+  <p><code>ambienteVigente()</code> responde si la última lectura buena es lo bastante reciente (menos de 2 minutos). Si no lo es, la telemetría omite temperatura y humedad del aire.</p>
+  <div class="note"><p><b class="tag">En simple:</b> prefiere no decir nada antes que decir algo viejo o inventado. Si faltan esos dos campos, el backend y el dashboard entienden que el sensor no responde.</p></div>
+</section>
+
+<section id="eventos">
+  <h2>Eventos: avisar que la bomba cambió</h2>
+  <p class="lead"><code>publicarEvento(bomba, motivo, duracionSeg)</code> arma un mensaje JSON y lo manda al topic <code>/evento</code>.</p>
+<pre><code>{"maceta_id":1,"bomba":false,"humedad":58,
+ "motivo":"fin de riego","duracion_seg":30,
+ "commandId":"abc-123"}</code></pre>
+  <p>Algunos campos son opcionales: la humedad solo va si ya hubo medición, la duración solo si es mayor a cero (son los segundos que la bomba estuvo realmente encendida) y el <code>commandId</code> solo si hay una orden en curso.</p>
+  <h3>Qué pasa si no hay conexión</h3>
+  <p>Si MQTT está caído, el mensaje no se pierde: se copia en <code>eventoPendiente</code> y <code>loop()</code> lo reenvía apenas vuelve la conexión. Es importante porque, sin el aviso de apagado, el backend creería que la orden falló.</p>
+  <div class="note warn"><p><b class="tag">Limitación:</b> hay un solo lugar para guardar un evento pendiente. Si la conexión sigue caída y ocurre otro evento, el nuevo reemplaza al anterior. En un riego corto suele bastar (se pierde el aviso de encendido y queda el de apagado), pero no es una cola real.</p></div>
+</section>
+
+<section id="bomba">
+  <h2>Bomba: iniciar, detener y vigilar</h2>
+  <p class="lead">Son tres funciones que trabajan juntas.</p>
+
+  <h3><code>iniciarRiego(duracionSeg, commandId)</code></h3>
+  <ol class="steps">
+    <li><strong>Rechaza</strong> la orden si no trae una duración válida (menor a 1 s).</li>
+    <li><strong>Rechaza</strong> la orden si ya hay un riego en curso.</li>
+    <li><strong>Acota</strong> la duración a <code>DURACION_MAX_S</code> (120 s). El nodo nunca riega más que eso, aunque la orden pida más por error o por un bug.</li>
+    <li><strong>Mide</strong> la humedad en ese momento, para incluirla en el evento.</li>
+    <li><strong>Guarda</strong> el <code>commandId</code> y calcula el instante de fin: <code>tBombaFin = inicio + duración</code>.</li>
+    <li><strong>Enciende</strong> el relé, deja un mensaje en el log y <strong>publica</strong> el evento “bomba encendida”.</li>
+  </ol>
+
+  <h3><code>detenerRiego(motivo)</code></h3>
+  <p>Si no hay riego, no hace nada. Si lo hay, <strong>primero apaga el relé</strong> y recién después hace todo lo demás (calcula cuánto duró, mide la humedad, escribe el log y publica el evento). Así, aunque algo se demore después, la bomba ya está apagada. Al final borra el <code>commandId</code>.</p>
+
+  <h3><code>servicioBomba()</code></h3>
+<pre><code>if (bombaEncendida &amp;&amp; (long)(millis() - tBombaFin) &gt;= 0) {
+  detenerRiego("fin de riego");
+}</code></pre>
+  <p>Se llama en cada vuelta de <code>loop()</code>, antes que nada y sin depender de la red. Revisa si ya llegó la hora de apagar. La resta con conversión a <code>long</code> es un truco que sigue funcionando bien aunque <code>millis()</code> dé la vuelta al llegar a su máximo (a los ~49 días).</p>
+  <div class="note"><p><b class="tag">En simple:</b> es como poner una alarma de cocina al encender la hornalla. La alarma suena aunque se corte internet, porque el reloj está dentro del nodo.</p></div>
+
+  <div class="tool">
+    <h3>Simulador de una orden de riego</h3>
+    <p>Probá cómo reacciona el nodo. Pedí más de 120 s, mandá una parada de emergencia o simulá que MQTT se cayó. El tiempo está acelerado.</p>
+    <div class="row">
+      <label>duracion_seg pedida <input type="number" id="s-dur" value="30" min="0" max="600"></label>
+      <button id="s-go">Enviar orden de riego</button>
+      <button id="s-stop" class="alt" disabled>Parada de emergencia</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="s-off"> MQTT caído cuando la bomba se apaga</label>
+    <div class="bar" aria-hidden="true"><i id="s-bar"></i></div>
+    <div class="log" id="s-log" role="log" aria-live="polite">Esperando una orden…</div>
+  </div>
+</section>
+
+<section id="telemetria">
+  <h2>Telemetría: el informe periódico</h2>
+  <p class="lead"><code>publicarTelemetria()</code> mide la humedad del suelo, arma un JSON y lo publica al topic <code>/telemetria</code>.</p>
+<pre><code>{"maceta_id":1,"humedad":58,
+ "temp_ambiente":23.4,"hum_ambiente":61.0,
+ "bomba":false,"rssi":-62,"ssid":"MiRed",
+ "ip":"192.168.1.40","heap":210000}</code></pre>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Campo</th><th>Significado</th></tr></thead>
+    <tbody>
+      <tr><td><code>humedad</code></td><td>Humedad del suelo en %.</td></tr>
+      <tr><td><code>temp_ambiente</code>, <code>hum_ambiente</code></td><td>Aire, redondeados a un decimal. Se omiten si el sensor no responde.</td></tr>
+      <tr><td><code>bomba</code></td><td>Si está encendida en este momento.</td></tr>
+      <tr><td><code>rssi</code></td><td>Intensidad de la señal WiFi (más cerca de 0 es mejor).</td></tr>
+      <tr><td><code>ssid</code>, <code>ip</code></td><td>A qué red está conectado y con qué dirección.</td></tr>
+      <tr><td><code>heap</code></td><td>Memoria libre del ESP32, útil para detectar fugas de memoria.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Si <code>mqtt.publish()</code> falla, lo anota en el log como “Fallo publish”. A diferencia de los eventos, la telemetría no se reenvía: el siguiente informe llega en 30 s.</p>
+</section>
+
+<section id="wifi">
+  <h2>WiFi</h2>
+  <p><code>cargarRedes()</code> registra hasta tres redes (con sus claves desde <code>secrets.h</code>). <code>conectarWiFi()</code>, que solo se usa al arrancar, espera en un bucle hasta conectarse e imprime el nombre de la red, la IP y la señal.</p>
+  <p>Que espere ahí no es riesgoso: en ese momento el relé ya está apagado y no hay ninguna orden en curso.</p>
+</section>
+
+<section id="mqtt">
+  <h2>MQTT: recibir órdenes y conectarse</h2>
+
+  <h3><code>onMessage()</code>: cuando llega un mensaje</h3>
+  <p>PubSubClient la llama automáticamente cada vez que llega algo al topic <code>/comando</code>.</p>
+<pre><code>{"activar_riego":true,"duracion_seg":5,"commandId":"..."}   // regar
+{"activar_riego":false}                                     // detener ya</code></pre>
+  <ol class="steps">
+    <li>Copia el contenido en un texto y lo escribe en el log.</li>
+    <li>Lo interpreta como JSON. Si no se puede leer, lo informa y termina.</li>
+    <li>Si no existe el campo <code>activar_riego</code> como verdadero o falso, lo ignora.</li>
+    <li>Si es <code>true</code>, llama a <code>iniciarRiego()</code> con la duración y el <code>commandId</code> (si faltan, usa 0 y texto vacío).</li>
+    <li>Si es <code>false</code>, llama a <code>detenerRiego("orden de detencion")</code>: es la parada de emergencia.</li>
+  </ol>
+
+  <h3><code>reconectarMQTT()</code>: reconexión sin bloquear</h3>
+  <p>Intenta conectar a lo sumo una vez cada 5 segundos y no se queda en un bucle de espera. Si conecta, se suscribe a <code>/comando</code> con QoS 1; si falla, anota el código de error (<code>rc</code>) y sigue.</p>
+  <div class="note warn"><p><b class="tag">Decisión de diseño:</b> la sesión es “limpia” a propósito. Si el backend publicó una orden mientras el nodo estaba desconectado, esa orden <strong>no</strong> se entrega al volver. El comentario del código lo justifica: regar tarde por una orden vieja es peor que no regar.</p></div>
+  <div class="note net"><p><b class="tag">Detalle técnico:</b> el propio intento de conexión TLS puede tardar unos instantes. Pero es un intento puntual, no un bucle que espere indefinidamente.</p></div>
+</section>
+
+<section id="setup">
+  <h2>setup(): el arranque</h2>
+  <p class="lead">Se ejecuta una sola vez al encender la placa. El orden importa.</p>
+  <ol class="steps">
+    <li><strong>Apaga el relé antes que nada</strong>, para que la bomba no arranque sola al encender.</li>
+    <li>Abre el puerto serie a 115200 baudios y muestra el título.</li>
+    <li>Configura el ADC: 12 bits y rango completo en el pin del suelo.</li>
+    <li>Inicia el sensor AM2302 en el GPIO 15.</li>
+    <li>Pone el WiFi en modo estación, carga las redes y espera la conexión.</li>
+    <li>Activa mDNS para poder entrar como <code>gda-nodo1.local</code>.</li>
+    <li>Configura OTA con nombre y contraseña. Si empieza una actualización, apaga el relé y marca la bomba como apagada. Durante la carga muestra el progreso, y al terminar o fallar lo informa.</li>
+    <li>Inicia el servidor telnet en el puerto 23.</li>
+    <li>Construye los tres topics con <code>snprintf</code> (por ejemplo <code>gda/prod/nodo1/comando</code>).</li>
+    <li>Carga el certificado, indica el servidor MQTT, amplía el buffer de mensajes a 512 bytes y registra <code>onMessage</code> como la función que atiende los mensajes entrantes.</li>
+  </ol>
+</section>
+
+<section id="loop">
+  <h2>loop(): el ciclo que nunca termina</h2>
+  <p class="lead">Se repite miles de veces por segundo. Cada paso es corto y casi todos tienen su propio control de tiempo.</p>
+  <ol class="steps">
+    <li><strong><code>ArduinoOTA.handle()</code></strong>: atiende actualizaciones por WiFi.</li>
+    <li><strong><code>servicioBomba()</code></strong>: ¿venció el tiempo de riego? Va primero y no depende de la red.</li>
+    <li><strong><code>servicioAmbiente()</code></strong>: lee el AM2302 si toca. Tampoco depende de la red.</li>
+    <li><strong>Chequeo de WiFi cada 10 s.</strong> No se hace en cada vuelta porque <code>wifiMulti.run()</code> escanea redes y bloquea cerca de 2 segundos.</li>
+    <li><strong>Si no hay WiFi, la vuelta termina acá</strong> (<code>return</code>). Los pasos 2 y 3 ya se ejecutaron, así que la bomba se apaga a tiempo igual.</li>
+    <li><strong>Telnet:</strong> si llegó un cliente nuevo, cierra el anterior y acepta al nuevo.</li>
+    <li><strong>MQTT:</strong> si no está conectado, intenta reconectar; después <code>mqtt.loop()</code> procesa mensajes entrantes y mantiene la conexión viva.</li>
+    <li><strong>Evento pendiente:</strong> si hay uno guardado y MQTT está conectado, lo reenvía.</li>
+    <li><strong>Telemetría:</strong> la primera se envía apenas conecta, y luego cada <code>TELEMETRIA_MS</code>.</li>
+  </ol>
+  <div class="note"><p><b class="tag">Por qué este orden:</b> lo crítico (apagar la bomba) va arriba y sin depender de nada. Lo que puede fallar o demorarse (red, MQTT) va abajo.</p></div>
+</section>
+
+<section id="resumen">
+  <h2>Resumen: las protecciones de seguridad</h2>
+  <p class="lead">Estas son las decisiones que evitan que la bomba quede encendida o se encienda cuando no debe.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Riesgo</th><th>Cómo lo evita el código</th></tr></thead>
+    <tbody>
+      <tr><td>La bomba arranca al encender la placa</td><td>El relé se apaga como primera instrucción de <code>setup()</code>.</td></tr>
+      <tr><td>Orden con duración excesiva</td><td>Tope de 120 s por orden.</td></tr>
+      <tr><td>Se cae WiFi o MQTT con la bomba encendida</td><td>El apagado depende del reloj interno y se evalúa antes que la red.</td></tr>
+      <tr><td>Dos órdenes superpuestas</td><td>Si ya hay riego en curso, la nueva se ignora.</td></tr>
+      <tr><td>Órdenes viejas al reconectar</td><td>Sesión MQTT limpia: no se entregan.</td></tr>
+      <tr><td>Datos de aire erróneos</td><td>Validación de rangos y omisión del dato si es viejo.</td></tr>
+      <tr><td>Actualización OTA con bomba encendida</td><td>El relé se apaga al iniciar la actualización.</td></tr>
+      <tr><td>Se necesita parar de inmediato</td><td>Comando <code>{"activar_riego":false}</code>.</td></tr>
+    </tbody>
+  </table></div>
+  <details>
+    <summary>Cosas a tener presentes al modificar el código</summary>
+    <p>El <code>commandId</code> se copia con <code>strncpy</code> a un espacio de 48 caracteres y se recorta si es más largo. Los mensajes JSON de eventos y telemetría caben en buffers de 256 y 320 bytes; si agregás muchos campos, hay que agrandarlos. El buffer MQTT de 512 bytes también limita el tamaño de los mensajes.</p>
+    <p>La lectura del suelo bloquea unos 200 ms. Es aceptable acá, pero conviene tenerlo en cuenta si se agregan más sensores.</p>
+  </details>
+</section>
+
+</main>
+
+<footer>Explicación del sketch “GDA Nodo IoT v2.1”. Los fragmentos de código son del archivo original, abreviados para facilitar la lectura.</footer>
+</div>
+
+<script>
+(function(){
+  /* ---- Calibración del suelo ---- */
+  var seco=document.getElementById('c-seco'), moj=document.getElementById('c-mojado'),
+      raw=document.getElementById('c-raw'), rawOut=document.getElementById('c-rawout'),
+      pct=document.getElementById('c-pct'), bar=document.getElementById('c-bar'),
+      cuenta=document.getElementById('c-cuenta');
+  function calc(){
+    var s=+seco.value, m=+moj.value, r=+raw.value, p;
+    rawOut.textContent=r;
+    if(s===m){p=0;}
+    else{p=Math.trunc((r-s)*100/(m-s));}  // map() de Arduino usa enteros
+    p=Math.min(100,Math.max(0,p));
+    pct.textContent=p+'%';
+    bar.style.width=p+'%';
+    cuenta.textContent='('+r+' − '+s+') × 100 ÷ ('+m+' − '+s+')';
+  }
+  [seco,moj,raw].forEach(function(e){e.addEventListener('input',calc);});
+  calc();
+
+  /* ---- Simulador de riego ---- */
+  var MAX=120;
+  var go=document.getElementById('s-go'), stop=document.getElementById('s-stop'),
+      dur=document.getElementById('s-dur'), off=document.getElementById('s-off'),
+      log=document.getElementById('s-log'), sbar=document.getElementById('s-bar');
+  var running=false, timer=null, firstLog=true;
+
+  function say(t){
+    if(firstLog){log.textContent='';firstLog=false;}
+    log.textContent+=t+'\n';
+    log.scrollTop=log.scrollHeight;
+  }
+  function json(on,motivo,secs){
+    var o='{"maceta_id":1,"bomba":'+on+',"humedad":'+(on?42:55)+',"motivo":"'+motivo+'"';
+    if(secs>0)o+=',"duracion_seg":'+secs;
+    return o+',"commandId":"demo-1"}';
+  }
+  function finish(motivo,realSecs){
+    running=false; clearInterval(timer);
+    go.disabled=false; stop.disabled=true;
+    say('BOMBA OFF tras '+realSecs+' s | '+motivo);
+    var msg=json(false,motivo,realSecs);
+    if(off.checked){
+      say('EVENTO en cola (sin MQTT): '+msg);
+      setTimeout(function(){
+        say('MQTT OK');
+        say('EVENTO reenviado: '+msg);
+      },1500);
+    }else{
+      say('EVENTO: '+msg);
+    }
+  }
+  go.addEventListener('click',function(){
+    var req=parseInt(dur.value,10)||0;
+    firstLog=true; log.textContent='';
+    say('RX [gda/prod/nodo1/comando]: {"activar_riego":true,"duracion_seg":'+req+',"commandId":"demo-1"}');
+    if(req<1){say('Orden ignorada: falta duracion_seg valida');return;}
+    var real=req;
+    if(req>MAX){say('Duracion acotada de '+req+' s a '+MAX+' s');real=MAX;}
+    running=true; go.disabled=true; stop.disabled=false;
+    say('BOMBA ON por '+real+' s | humedad=42%');
+    say('EVENTO: '+json(true,'orden de riego',0));
+    var t0=Date.now(), total=3000;
+    sbar.style.width='0';
+    timer=setInterval(function(){
+      var f=Math.min(1,(Date.now()-t0)/total);
+      sbar.style.width=(f*100)+'%';
+      if(f>=1){finish('fin de riego',real);}
+    },50);
+    stop.onclick=function(){
+      if(!running)return;
+      var f=Math.min(1,(Date.now()-t0)/total);
+      say('RX [gda/prod/nodo1/comando]: {"activar_riego":false}');
+      finish('orden de detencion',Math.round(f*real));
+    };
+  });
+})();
+</script>
+</body>
+</html>

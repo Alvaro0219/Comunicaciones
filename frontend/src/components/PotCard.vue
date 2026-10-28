@@ -3,13 +3,20 @@
     <header class="gda-pot-head">
       <div class="gda-pot-id">
         <h3 class="gda-pot-name">{{ pot.name }}</h3>
+        <div v-if="pot.species || pot.plants?.length" class="gda-pot-species">
+          <span v-if="pot.species">{{ pot.species }}</span>
+          <span v-if="pot.plants?.length" class="gda-mono">{{ pot.plants.length }} {{ pot.plants.length === 1 ? 'maceta' : 'macetas' }}</span>
+        </div>
         <div class="gda-pot-node">
           <span class="gda-dot" :class="{ 'gda-dot--on': pot.online }" />
           <span class="gda-mono">{{ pot.nodeId }}</span>
           <span class="gda-pot-conn">{{ pot.online ? 'online' : 'offline' }}</span>
         </div>
       </div>
-      <q-badge v-if="pot.activeAlerts" color="accent" :label="`${pot.activeAlerts} alerta${pot.activeAlerts > 1 ? 's' : ''}`" />
+      <div class="gda-pot-badges">
+        <q-badge v-if="pot.isDemo" outline color="warning" label="Zona de ejemplo" />
+        <q-badge v-if="pot.activeAlerts" color="accent" :label="`${pot.activeAlerts} alerta${pot.activeAlerts > 1 ? 's' : ''}`" />
+      </div>
     </header>
 
     <div v-if="pot.lastReading?.measuredAt" class="gda-pot-readouts">
@@ -120,6 +127,14 @@ function formatDate(d) {
   color: var(--gda-ink);
   margin: 0;
 }
+.gda-pot-species {
+  display: flex;
+  gap: 10px;
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--gda-ink-soft);
+}
+.gda-pot-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .gda-pot-node {
   display: flex;
   align-items: center;

@@ -27,7 +27,7 @@
             <q-item-section>
               <q-item-label>{{ alert.message }}</q-item-label>
               <q-item-label caption>
-                {{ alert.potId?.name || 'Maceta' }} · {{ typeLabel(alert.type) }} · {{ fmtDate(alert.createdAt) }}
+                {{ alert.potId?.name || 'Zona' }} · {{ typeLabel(alert.type) }} · {{ fmtDate(alert.createdAt) }}
                 <span v-if="alert.status === 'resuelta'"> · resuelta {{ fmtDate(alert.resolvedAt) }}</span>
               </q-item-label>
             </q-item-section>

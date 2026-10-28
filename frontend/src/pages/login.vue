@@ -6,7 +6,7 @@
         <BrandMark :size="34" class="gda-auth-mark" />
         <span class="gda-auth-logo">GDA</span>
       </div>
-      <h1 class="gda-auth-claim">Cada maceta, <br />medida y regada <br />a tiempo.</h1>
+      <h1 class="gda-auth-claim">Cada zona, <br />medida y regada <br />a tiempo.</h1>
       <p class="gda-auth-desc">
         Sensores en campo, pronóstico meteorológico y un motor de decisión
         que riega solo cuando hace falta.
@@ -18,7 +18,7 @@
     <section class="gda-auth-form">
       <div class="gda-auth-form-inner">
         <h2 class="gda-auth-title">Iniciar sesión</h2>
-        <p class="gda-auth-sub">Accedé al estado de tus macetas en tiempo real.</p>
+        <p class="gda-auth-sub">Accedé al estado de tus zonas de riego en tiempo real.</p>
 
         <q-banner v-if="reason" dense rounded class="gda-auth-banner">
           Tu sesión expiró. Iniciá sesión nuevamente.

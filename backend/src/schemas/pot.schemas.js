@@ -6,6 +6,8 @@ const locationSchema = Joi.object({
   label: Joi.string().max(120).allow('')
 });
 
+const plantsSchema = Joi.array().items(Joi.object({ name: Joi.string().min(1).max(80).required() })).max(60);
+
 export const createPotSchema = Joi.object({
   name: Joi.string().min(1).max(120).required(),
   nodeId: Joi.string().pattern(/^[a-zA-Z0-9_-]{3,64}$/).required(),
@@ -15,6 +17,8 @@ export const createPotSchema = Joi.object({
   heatTempThreshold: Joi.number().min(0).max(60).default(35),
   heatIrrigationDurationSec: Joi.number().min(1).max(600).default(3),
   rainProbThreshold: Joi.number().min(0).max(100).default(50),
+  species: Joi.string().max(80).allow(''),
+  plants: plantsSchema,
   location: locationSchema.optional(),
   isActive: Joi.boolean().default(true)
 });
@@ -27,6 +31,8 @@ export const updatePotSchema = Joi.object({
   heatTempThreshold: Joi.number().min(0).max(60),
   heatIrrigationDurationSec: Joi.number().min(1).max(600),
   rainProbThreshold: Joi.number().min(0).max(100),
+  species: Joi.string().max(80).allow(''),
+  plants: plantsSchema,
   location: locationSchema,
   isActive: Joi.boolean()
 }).min(1);

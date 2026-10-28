@@ -4,7 +4,7 @@
       <div>
         <h1 class="gda-page-title">Dashboard</h1>
         <p class="gda-page-subtitle">
-          Estado en vivo de tus macetas
+          Estado en vivo de tus zonas
           <q-badge :color="connected ? 'positive' : 'grey-5'" class="q-ml-sm">
             {{ connected ? 'en vivo' : 'reconectando…' }}
           </q-badge>
@@ -16,9 +16,27 @@
     <LoadingState
       :loading="loading"
       :empty="!loading && pots.length === 0"
-      empty-label="Todavía no hay macetas. Creá la primera desde la sección Macetas."
-      empty-icon="potted_plant"
+      empty-label="Todavía no hay zonas. Creá la primera desde la sección Zonas."
+      empty-icon="grass"
     >
+      <div class="gda-summary" role="list" aria-label="Resumen de zonas">
+        <div class="gda-summary-item" role="listitem">
+          <span class="gda-summary-value gda-summary-value--ok">{{ summary.ok }}</span>
+          <span class="gda-metric-label">En rango</span>
+        </div>
+        <div class="gda-summary-item" role="listitem">
+          <span class="gda-summary-value gda-summary-value--attention">{{ summary.attention }}</span>
+          <span class="gda-metric-label">Requieren atención</span>
+        </div>
+        <div class="gda-summary-item" role="listitem">
+          <span class="gda-summary-value">{{ summary.offline }}</span>
+          <span class="gda-metric-label">Sin conexión</span>
+        </div>
+        <div class="gda-summary-item" role="listitem">
+          <span class="gda-summary-value">{{ summary.plants }}</span>
+          <span class="gda-metric-label">Macetas en total</span>
+        </div>
+      </div>
       <div class="gda-grid">
         <PotCard
           v-for="pot in pots" :key="pot._id"
@@ -53,7 +71,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useAuthStore } from '../../stores/auth.js';
@@ -67,6 +85,20 @@ const router = useRouter();
 const auth = useAuthStore();
 
 const pots = ref([]);
+
+// Una zona "requiere atención" si tiene alertas activas o la humedad está fuera de sus límites
+const summary = computed(() => {
+  const s = { ok: 0, attention: 0, offline: 0, plants: 0 };
+  for (const p of pots.value) {
+    s.plants += p.plants?.length || 0;
+    if (!p.online) { s.offline++; continue; }
+    const soil = p.lastReading?.soilMoisture;
+    const out = soil != null && (soil < p.minMoisture || soil > p.maxMoisture);
+    if (p.activeAlerts || out) s.attention++;
+    else s.ok++;
+  }
+  return s;
+});
 const loading = ref(false);
 
 const showIrrigate = ref(false);
@@ -77,10 +109,10 @@ const irrigating = ref(false);
 async function reload() {
   loading.value = true;
   try {
-    // El dashboard muestra solo macetas activas; la gestión completa vive en /pots
+    // El dashboard muestra solo zonas activas; la gestión completa vive en /pots
     pots.value = (await fetchPots({ limit: 100, active: 'true' })).items || [];
   } catch (e) {
-    $q.notify({ type: 'negative', message: e.message || 'No se pudieron cargar las macetas' });
+    $q.notify({ type: 'negative', message: e.message || 'No se pudieron cargar las zonas' });
   } finally {
     loading.value = false;
   }

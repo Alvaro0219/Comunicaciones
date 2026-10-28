@@ -8,6 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Backend (API + cliente MQTT contra HiveMQ) — requiere MONGO_URL y sección MQTT en backend/.env
 cd backend && npm run dev                 # node --watch, puerto 4000
 npm run seed:admin -- <email> <pass> "Nombre"   # crea/promueve el usuario admin
+npm run seed:demo -- <email-dueño>     # zonas de ejemplo (isDemo) con 24 h de datos para la demo; --borrar las quita
 npm run e2e                              # prueba de punta a punta: emula al nodo v2 contra el HiveMQ de tu .env y le pega a la API; ver docs/PRUEBA_LOCAL_BROKER_PRODUCCION.md
 
 # Frontend (dashboard)
@@ -39,6 +40,10 @@ Es el camino que cruza casi todos los archivos del backend:
 5. Cada paso emite eventos SSE vía `realtime/sseHub.js`; el hub filtra por dueño (admin recibe todo, el resto solo sus macetas).
 
 Para evitar ciclos de imports, `mqtt/client.js` no importa services: recibe los handlers (`onTelemetry`, `onEvent`) por parámetro desde `app.js`. `irrigationService` sí importa `publishCommand`/`isWriteMode` del cliente. El campo `Pot.deviceToken` quedó vestigial (la auth MQTT es contra HiveMQ, no contra nuestra DB); la asociación mensaje→maceta es por `Pot.nodeId` = segmento del topic.
+
+### Zonas (vocabulario de la presentación: vivero)
+
+En la interfaz, cada `Pot` es una **zona**: un nodo con sus límites de humedad, una `species` y una lista descriptiva `plants` (las macetas de la zona, que comparten los límites y no generan mensajes). El modelo, las rutas y el camino MQTT siguen siendo `Pot`/`/pots`. `Pot.isDemo` marca zonas de demostración (`scripts/seedDemo.js`): sin nodo físico, el scheduler no les aplica el timeout de sensores y el riego manual se simula (`simulateDemoIrrigation`, no publica en el broker). `isDemo` no se puede cambiar por la API.
 
 ### Convenciones backend (estrictas, vienen de la skill de arquitectura)
 

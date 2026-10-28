@@ -286,3 +286,24 @@ async function eventPayload(event, pot) {
     createdAt: event.createdAt
   };
 }
+
+// Riego manual sobre una zona de demostración (sin nodo físico): no publica nada en el
+// broker; deja el mismo rastro que un riego real confirmado para poder mostrar el flujo.
+export async function simulateDemoIrrigation({ pot, durationSec, requestedBy }) {
+  const event = await Event.create({
+    potId: pot._id,
+    type: 'riego_manual',
+    origin: 'manual',
+    byUserId: requestedBy,
+    durationSec,
+    result: 'confirmado',
+    message: `[zona de ejemplo] riego simulado de ${durationSec}s`,
+    detail: { reason: 'riego_manual_dashboard', soilMoisture: pot.lastReading?.soilMoisture }
+  });
+  const updated = await Pot.findByIdAndUpdate(pot._id, {
+    lastIrrigation: { at: new Date(), durationSec, origin: 'manual', result: 'ok' }
+  }, { new: true });
+  broadcast('event', await eventPayload(event, updated), updated.ownerId);
+  broadcast('pot_status', { potId: updated._id, lastIrrigation: updated.lastIrrigation }, updated.ownerId);
+  return { event };
+}

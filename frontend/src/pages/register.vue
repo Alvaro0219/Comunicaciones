@@ -5,7 +5,7 @@
         <BrandMark :size="34" class="gda-auth-mark" />
         <span class="gda-auth-logo">GDA</span>
       </div>
-      <h1 class="gda-auth-claim">Sumá tus macetas <br />al gemelo digital.</h1>
+      <h1 class="gda-auth-claim">Sumá tus zonas <br />al gemelo digital.</h1>
       <p class="gda-auth-desc">
         Creá tu cuenta, registrá tus nodos ESP32 y empezá a ver
         cada riego, lectura y alerta en un solo lugar.
@@ -16,7 +16,7 @@
     <section class="gda-auth-form">
       <div class="gda-auth-form-inner">
         <h2 class="gda-auth-title">Crear cuenta</h2>
-        <p class="gda-auth-sub">Vas a poder gestionar tus propias macetas desde el primer login.</p>
+        <p class="gda-auth-sub">Vas a poder gestionar tus propias zonas desde el primer login.</p>
 
         <q-input v-model="fullName" label="Nombre completo" outlined dense class="q-mb-md" />
         <q-input v-model="email" label="Email" type="email" outlined dense class="q-mb-md" />

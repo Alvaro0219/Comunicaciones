@@ -78,7 +78,7 @@ export async function refreshApi(refreshToken) {
   return unwrap(data, 'No se pudo refrescar la sesión', status);
 }
 
-// ─── Macetas ────────────────────────────────────────
+// ─── Zonas (cada zona es un nodo con sus macetas) ────────────────────────────────────────
 export async function fetchPots(params = {}) {
   const { data } = await api.get('/pots', { params });
   return data.data || { items: [], pagination: {} };
@@ -91,22 +91,22 @@ export async function fetchAllPots() {
 
 export async function fetchPot(id) {
   const { data, status } = await api.get(`/pots/${id}`);
-  return unwrap(data, 'No se pudo cargar la maceta', status);
+  return unwrap(data, 'No se pudo cargar la zona', status);
 }
 
 export async function createPot(payload) {
   const { data, status } = await api.post('/pots', payload);
-  return unwrap(data, 'No se pudo crear la maceta', status);
+  return unwrap(data, 'No se pudo crear la zona', status);
 }
 
 export async function updatePot(id, payload) {
   const { data, status } = await api.put(`/pots/${id}`, payload);
-  return unwrap(data, 'No se pudo actualizar la maceta', status);
+  return unwrap(data, 'No se pudo actualizar la zona', status);
 }
 
-export async function deletePot(id) {
-  const { data, status } = await api.delete(`/pots/${id}`);
-  return unwrap(data, 'No se pudo eliminar la maceta', status);
+export async function deletePot(id, permanent = false) {
+  const { data, status } = await api.delete(`/pots/${id}`, { params: permanent ? { permanent: true } : {} });
+  return unwrap(data, 'No se pudo eliminar la zona', status);
 }
 
 export async function irrigatePot(id, durationSec = null) {

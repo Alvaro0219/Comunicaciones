@@ -1,6 +1,6 @@
 <template>
   <div class="gda-page-shell">
-    <LoadingState :loading="loadingPot" :empty="!loadingPot && !pot" empty-label="Maceta no encontrada.">
+    <LoadingState :loading="loadingPot" :empty="!loadingPot && !pot" empty-label="Zona no encontrada.">
       <div v-if="pot">
         <div class="gda-page-header">
           <div>
@@ -9,7 +9,7 @@
               <q-badge :color="pot.online ? 'positive' : 'grey-5'" :label="pot.online ? 'online' : 'offline'" class="q-ml-sm" />
             </h1>
             <p class="gda-page-subtitle">
-              Nodo {{ pot.nodeId }}
+              <span v-if="pot.species">{{ pot.species }} · </span>Nodo {{ pot.nodeId }}
               <span v-if="pot.location?.label"> · {{ pot.location.label }}</span>
             </p>
           </div>
@@ -25,6 +25,12 @@
           </div>
         </div>
 
+        <q-banner v-if="pot.isDemo" rounded class="gda-demo-banner q-mb-md">
+          <template #avatar><q-icon name="science" /></template>
+          Zona de ejemplo: los datos son de demostración y no hay un nodo físico conectado.
+          El riego manual se simula y no activa ninguna bomba.
+        </q-banner>
+
         <!-- Estado actual -->
         <div class="row q-col-gutter-md q-mb-md">
           <div class="col-12 col-md-8">
@@ -33,7 +39,7 @@
               <div v-if="pot.lastReading?.measuredAt" class="gda-current">
                 <div class="gda-metric">
                   <span class="gda-metric-value">{{ round(pot.lastReading.soilMoisture) }}%</span>
-                  <span class="gda-metric-label">Humedad suelo (umbral {{ pot.minMoisture }}–{{ pot.maxMoisture }}%)</span>
+                  <span class="gda-metric-label">Humedad del suelo, límites de la zona {{ pot.minMoisture }}–{{ pot.maxMoisture }}%</span>
                 </div>
                 <div v-if="pot.lastReading.temperature != null" class="gda-metric">
                   <span class="gda-metric-value">{{ round(pot.lastReading.temperature) }}°C</span>
@@ -70,7 +76,14 @@
           </div>
           <div class="col-12 col-md-4">
             <div class="gda-section-card">
-              <div class="gda-card-title">Nodo</div>
+              <div v-if="pot.plants?.length" class="gda-plants">
+                <div class="gda-card-title">Macetas de la zona ({{ pot.plants.length }})</div>
+                <div class="gda-plants-list">
+                  <span v-for="(pl, i) in pot.plants" :key="i" class="gda-plant">{{ pl.name }}</span>
+                </div>
+                <div class="text-caption text-grey-6 q-mt-xs">Comparten los límites de humedad de la zona.</div>
+              </div>
+              <div class="gda-card-title" :class="{ 'q-mt-md': pot.plants?.length }">Nodo</div>
               <div class="gda-cred"><span>Node ID:</span> <code>{{ pot.nodeId }}</code></div>
               <template v-if="pot.diagnostics?.at">
                 <div class="gda-cred"><span>Red:</span> <code>{{ pot.diagnostics.ssid || '—' }}</code></div>
@@ -87,7 +100,8 @@
                 </div>
                 <div class="gda-cred"><span>RAM libre:</span> <code>{{ formatHeap(pot.diagnostics.heap) }}</code></div>
               </template>
-              <div class="text-caption text-grey-6 q-mt-xs">
+              <div v-if="pot.isDemo" class="text-caption text-grey-6 q-mt-xs">Sin nodo físico: zona de demostración.</div>
+              <div v-else class="text-caption text-grey-6 q-mt-xs">
                 La autenticación MQTT del nodo se gestiona en el broker (HiveMQ) —
                 ver el documento interno del equipo.
               </div>
@@ -100,7 +114,7 @@
           <div class="gda-card-title">Pronóstico a 5 días</div>
           <ForecastStrip v-if="forecast?.daily?.length" :daily="forecast.daily" />
           <div v-else class="text-grey-6 text-caption">
-            {{ pot.location?.lat != null ? 'Pronóstico no disponible.' : 'Configurá la ubicación de la maceta para ver el pronóstico.' }}
+            {{ pot.location?.lat != null ? 'Pronóstico no disponible.' : 'Configurá la ubicación de la zona para ver el pronóstico.' }}
           </div>
         </div>
 
@@ -277,7 +291,7 @@ async function load() {
     }
     await loadHistory();
   } catch (e) {
-    $q.notify({ type: 'negative', message: e.message || 'No se pudo cargar la maceta' });
+    $q.notify({ type: 'negative', message: e.message || 'No se pudo cargar la zona' });
   } finally {
     loadingPot.value = false;
   }
@@ -335,6 +349,15 @@ async function doIrrigate() {
 
 <style scoped>
 .gda-current { display: flex; gap: 32px; flex-wrap: wrap; }
+.gda-demo-banner { background: var(--gda-sun-tint, #F7ECD9); color: var(--gda-ink); border: 1px solid var(--gda-hairline); }
+.gda-plants-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.gda-plant {
+  font-size: 12.5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--gda-leaf-tint);
+  color: var(--gda-ink);
+}
 .gda-last-update { margin-top: 14px; font-size: 12px; color: var(--gda-ink-soft); }
 .gda-cred { font-size: 13px; color: var(--gda-ink-soft); margin-bottom: 5px; }
 .gda-cred code {
