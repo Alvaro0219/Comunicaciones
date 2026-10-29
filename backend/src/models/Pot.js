@@ -17,6 +17,13 @@ const PotSchema = new mongoose.Schema({
   heatIrrigationDurationSec: { type: Number, min: 1, max: 600, default: env.heatIrrigationSec },
   rainProbThreshold: { type: Number, min: 0, max: 100, default: env.rainProbThreshold },
 
+  // Lluvia: una zona interior (o bajo techo) ignora el pronóstico. En una exterior el riego se
+  // pospone por lluvia prevista, pero nunca de más: si la humedad cae emergencyMarginPts por
+  // debajo del mínimo, o la espera supera maxPostponeHours, se riega igual.
+  exposure: { type: String, enum: ['exterior', 'interior'], default: 'exterior' },
+  emergencyMarginPts: { type: Number, min: 0, max: 50, default: 10 },
+  maxPostponeHours: { type: Number, min: 1, max: 72, default: 6 },
+
   location: {
     lat: { type: Number, min: -90, max: 90 },
     lon: { type: Number, min: -180, max: 180 },

@@ -29,7 +29,7 @@ const LOCATION = { lat: -31.43, lon: -62.08, label: 'San Francisco, Córdoba' };
 // que sube el suelo con cada riego. silentHours: horas sin reportar (zona sin conexión).
 const ZONES = [
   {
-    name: 'Invernadero A · Helechos', nodeId: 'demo-zona-a', species: 'Helechos',
+    name: 'Invernadero A · Helechos', nodeId: 'demo-zona-a', species: 'Helechos', exposure: 'interior',
     plants: ['Helecho de Boston', 'Helecho de Boston', 'Helecho nido de ave', 'Adiantum', 'Adiantum', 'Helecho de Boston'],
     min: 60, max: 80, start: 74, drop: 0.25, irrigateBelow: 62, jump: 14, temp: 24, air: 72
   },
@@ -111,6 +111,7 @@ for (const z of ZONES) {
     minMoisture: z.min,
     maxMoisture: z.max,
     species: z.species,
+    exposure: z.exposure || 'exterior',
     plants: z.plants.map((name) => ({ name })),
     location: LOCATION,
     isDemo: true

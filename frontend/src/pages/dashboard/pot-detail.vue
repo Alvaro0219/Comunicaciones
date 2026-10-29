@@ -9,7 +9,7 @@
               <q-badge :color="pot.online ? 'positive' : 'grey-5'" :label="pot.online ? 'online' : 'offline'" class="q-ml-sm" />
             </h1>
             <p class="gda-page-subtitle">
-              <span v-if="pot.species">{{ pot.species }} · </span>Nodo {{ pot.nodeId }}
+              <span v-if="pot.species">{{ pot.species }} · </span><span v-if="pot.exposure === 'interior'">Interior · </span>Nodo {{ pot.nodeId }}
               <span v-if="pot.location?.label"> · {{ pot.location.label }}</span>
             </p>
           </div>

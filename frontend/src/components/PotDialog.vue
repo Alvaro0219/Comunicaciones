@@ -32,11 +32,35 @@
           <div class="col-6">
             <q-input v-model.number="form.irrigationDurationSec" type="number" label="Duración riego (s)" dense outlined />
           </div>
-          <div class="col-6">
+          <div v-if="form.exposure === 'exterior'" class="col-6">
             <q-input v-model.number="form.rainProbThreshold" type="number" label="Umbral prob. lluvia (%)" dense outlined />
           </div>
         </div>
-        <div class="row q-col-gutter-sm">
+        <div class="text-caption text-grey-7 q-mt-sm">Lluvia</div>
+        <q-btn-toggle
+          v-model="form.exposure" no-caps unelevated spread toggle-color="primary"
+          :options="[
+            { label: 'Exterior (considera la lluvia)', value: 'exterior' },
+            { label: 'Interior o bajo techo', value: 'interior' }
+          ]"
+        />
+        <div v-if="form.exposure === 'exterior'" class="row q-col-gutter-sm">
+          <div class="col-6">
+            <q-input
+              v-model.number="form.emergencyMarginPts" type="number" label="Emergencia (puntos bajo el mínimo)" dense outlined
+              hint="Si cae tanto, riega aunque llueva"
+            />
+          </div>
+          <div class="col-6">
+            <q-input
+              v-model.number="form.maxPostponeHours" type="number" label="Espera máxima por lluvia (h)" dense outlined
+              hint="Pasado ese tiempo, riega igual"
+            />
+          </div>
+        </div>
+        <div v-else class="text-caption text-grey-7">Esta zona ignora el pronóstico: no se pospone el riego por lluvia.</div>
+
+        <div class="row q-col-gutter-sm q-mt-xs">
           <div class="col-6">
             <q-input v-model.number="form.heatTempThreshold" type="number" label="Umbral calor (°C)" dense outlined />
           </div>
@@ -90,6 +114,9 @@ const defaults = () => ({
   maxMoisture: 70,
   irrigationDurationSec: 5,
   rainProbThreshold: 50,
+  exposure: 'exterior',
+  emergencyMarginPts: 10,
+  maxPostponeHours: 6,
   heatTempThreshold: 35,
   heatIrrigationDurationSec: 3,
   lat: null,
@@ -113,6 +140,9 @@ watch(() => [props.modelValue, props.pot], () => {
       maxMoisture: props.pot.maxMoisture,
       irrigationDurationSec: props.pot.irrigationDurationSec,
       rainProbThreshold: props.pot.rainProbThreshold,
+      exposure: props.pot.exposure || 'exterior',
+      emergencyMarginPts: props.pot.emergencyMarginPts ?? 10,
+      maxPostponeHours: props.pot.maxPostponeHours ?? 6,
       heatTempThreshold: props.pot.heatTempThreshold,
       heatIrrigationDurationSec: props.pot.heatIrrigationDurationSec,
       lat: props.pot.location?.lat ?? null,
@@ -133,6 +163,9 @@ function submit() {
     maxMoisture: form.maxMoisture,
     irrigationDurationSec: form.irrigationDurationSec,
     rainProbThreshold: form.rainProbThreshold,
+    exposure: form.exposure,
+    emergencyMarginPts: form.emergencyMarginPts,
+    maxPostponeHours: form.maxPostponeHours,
     heatTempThreshold: form.heatTempThreshold,
     heatIrrigationDurationSec: form.heatIrrigationDurationSec
   };

@@ -346,6 +346,72 @@ html.present { scroll-snap-type: y mandatory; }
   .band, .hero { break-inside: avoid-page; }
   body { background: #fff; }
 }
+
+/* ── Funcionalidades ── */
+#funciones { border-top: 1px solid var(--hair); }
+.sim { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.sim-controls, .sim-out { background: var(--card); border: 1px solid var(--hair); border-radius: 16px; padding: 22px; }
+.sim h3 { font-size: 1.3rem; font-weight: 800; }
+.sim .sub { color: var(--ink-soft); margin-top: 4px; font-size: 0.97rem; }
+.ctl { margin-top: 18px; }
+.ctl > label, .ctl > .lab { display: flex; justify-content: space-between; align-items: baseline; font-weight: 600; font-size: 0.95rem; margin-bottom: 8px; }
+.ctl .val { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--leaf); font-weight: 600; }
+.seg { display: flex; padding: 3px; background: var(--mist); border: 1px solid var(--hair); border-radius: 10px; gap: 2px; }
+.seg button { flex: 1; font: 600 0.9rem var(--body); color: var(--ink-soft); background: transparent; border: 0; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(31, 42, 34, 0.14); }
+.sim input[type="range"] { width: 100%; accent-color: var(--leaf); }
+.sim select { width: 100%; font: 500 0.95rem var(--body); padding: 9px 10px; border-radius: 9px; border: 1px solid var(--hair); background: var(--card); color: var(--ink); }
+.band-demo { position: relative; height: 10px; border-radius: 6px; background: #E9D9CF; margin: 4px 0 0; }
+.band-demo .safe { position: absolute; top: 0; bottom: 0; left: 30%; width: 40%; background: var(--leaf-tint); border-inline: 2px solid var(--leaf); }
+.band-demo .over { position: absolute; top: 0; bottom: 0; left: 70%; right: 0; background: var(--water-tint); border-radius: 0 6px 6px 0; }
+.band-demo .mark { position: absolute; top: 50%; width: 18px; height: 18px; border-radius: 50%; background: var(--leaf); border: 3px solid #fff; box-shadow: 0 0 0 1px var(--hair); transform: translate(-50%, -50%); transition: left .15s, background-color .15s; }
+.band-demo .mark.dry { background: var(--clay); }
+.band-demo .mark.wet { background: var(--water); }
+.band-ticks { position: relative; height: 1.3em; margin-top: 6px; font: 500 0.78rem var(--mono); color: var(--ink-soft); }
+.band-ticks span { position: absolute; top: 0; white-space: nowrap; }
+.sim-params { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--hair); color: var(--ink-soft); font-size: 0.9rem; }
+.out-row { display: grid; grid-template-columns: 24px 130px 1fr; gap: 6px 12px; padding: 14px 0; border-top: 1px solid var(--hair); align-items: start; }
+.out-row:first-of-type { border-top: 0; }
+.out-row .dot { width: 11px; height: 11px; border-radius: 50%; margin-top: 7px; }
+.out-row .k { font: 600 0.78rem var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); padding-top: 3px; }
+.out-row .v b { display: block; font-family: var(--display); font-size: 1.15rem; letter-spacing: -0.01em; }
+.out-row .v span { color: var(--ink-soft); font-size: 0.96rem; }
+.d-water { background: var(--water); } .d-sun { background: var(--sun); } .d-clay { background: var(--clay); } .d-leaf { background: var(--leaf); } .d-soft { background: var(--ink-soft); }
+.sim-out h3 { margin-bottom: 4px; }
+
+.fx-list { margin-top: clamp(40px, 5vw, 64px); }
+.fx-list > h3 { font-size: 1.45rem; font-weight: 800; }
+.fx-list > p { color: var(--ink-soft); margin-top: 6px; }
+.fx-acc { margin-top: 20px; border-top: 1px solid var(--hair); }
+.fx-acc details { border-bottom: 1px solid var(--hair); }
+.fx-acc summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 34px 1fr 24px; gap: 12px; align-items: center; padding: 18px 0; }
+.fx-acc summary::-webkit-details-marker { display: none; }
+.fx-acc summary .ic { color: var(--leaf); width: 26px; height: 26px; }
+.fx-acc summary b { font-family: var(--display); font-size: 1.2rem; letter-spacing: -0.01em; display: block; }
+.fx-acc summary small { color: var(--ink-soft); font-size: 0.95rem; display: block; }
+.fx-acc summary .chev { color: var(--ink-soft); transition: transform .2s; }
+.fx-acc details[open] summary .chev { transform: rotate(90deg); }
+.fx-acc summary:hover b { color: var(--leaf); }
+.fx-body { padding: 0 0 22px 46px; }
+.cases { width: 100%; border-collapse: collapse; }
+.cases td, .cases th { text-align: left; vertical-align: top; padding: 10px 14px 10px 0; border-top: 1px solid var(--hair); font-size: 0.98rem; }
+.cases tr:first-child td, .cases thead th { border-top: 0; }
+.cases th { font: 600 0.76rem var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); padding-bottom: 8px; }
+.cases td:first-child { font-weight: 600; width: 34%; }
+.cases td:last-child { padding-right: 0; }
+.cases-wrap { overflow-x: auto; }
+.cases-wrap .cases { min-width: 560px; }
+.fx-body ul { margin: 0; padding-left: 20px; }
+.fx-body li { margin: 6px 0; }
+.fx-note { margin-top: 12px; color: var(--ink-soft); font-size: 0.95rem; }
+
+@media (max-width: 1080px) { .sim { grid-template-columns: 1fr; } }
+@media (max-width: 760px) {
+  .out-row { grid-template-columns: 20px 1fr; }
+  .out-row .v { grid-column: 2; }
+  .fx-body { padding-left: 0; }
+  .fx-acc summary { grid-template-columns: 30px 1fr 20px; }
+}
 </style>
 </head>
 <body>
@@ -390,6 +456,7 @@ html.present { scroll-snap-type: y mandatory; }
     </a>
     <div class="navlinks">
       <a href="#objetivo">Objetivo</a>
+      <a href="#funciones">Funcionalidades</a>
       <a href="#partes">Cómo se relacionan</a>
       <a href="#nodo">Conexiones del nodo</a>
       <a href="#tecnologias">Tecnologías</a>
@@ -467,7 +534,7 @@ html.present { scroll-snap-type: y mandatory; }
         <thead><tr><th scope="col">Situación</th><th scope="col">Qué hace el sistema</th></tr></thead>
         <tbody>
           <tr><td>El suelo está más seco que el mínimo y no se espera lluvia</td><td><span class="verdict v-riega"><span class="dot"></span>Riega unos segundos<small>y genera una alerta crítica</small></span></td></tr>
-          <tr><td>El suelo está seco, pero se espera lluvia en las próximas 6 horas</td><td><span class="verdict v-espera"><span class="dot"></span>Pospone el riego<small>y genera una alerta preventiva</small></span></td></tr>
+          <tr><td>El suelo está seco, pero se espera lluvia en las próximas 6 horas (zona exterior)</td><td><span class="verdict v-espera"><span class="dot"></span>Pospone el riego<small>con tope: si cae en emergencia o espera más de 6 horas, riega igual</small></span></td></tr>
           <tr><td>El suelo está más húmedo que el máximo</td><td><span class="verdict v-no"><span class="dot"></span>No riega<small>y avisa por exceso de humedad</small></span></td></tr>
           <tr><td>Hace mucho calor y el suelo está algo seco</td><td><span class="verdict v-riega"><span class="dot"></span>Riego breve adicional<small>y alerta de calor extremo</small></span></td></tr>
           <tr><td>Acaba de regar</td><td><span class="verdict v-espera"><span class="dot"></span>Espera 10 minutos antes de volver a regar solo<small>el agua tarda en llegar al sensor</small></span></td></tr>
@@ -475,6 +542,267 @@ html.present { scroll-snap-type: y mandatory; }
           <tr><td>Alguien toca «Regar ahora» en el dashboard</td><td><span class="verdict v-riega"><span class="dot"></span>Riega en el momento<small>solo técnicos y administradores</small></span></td></tr>
         </tbody>
       </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FUNCIONALIDADES ═══════════════ -->
+<section class="band" id="funciones" aria-labelledby="t-funciones">
+  <div class="wrap">
+    <div class="band-head">
+      <h2 id="t-funciones">Funcionalidades</h2>
+      <p class="lead">Todo lo que hace el sistema y cómo se comporta en cada caso. Armá una situación en el simulador y mirá qué decide, o recorré las funciones una por una.</p>
+    </div>
+
+    <div class="sim">
+      <div class="sim-controls">
+        <h3>¿Qué haría el sistema?</h3>
+        <p class="sub">Cambiá la situación de una zona y mirá la decisión.</p>
+
+        <div class="ctl">
+          <div class="lab">Tipo de zona</div>
+          <div class="seg" role="group" aria-label="Tipo de zona" data-ctl="exposure">
+            <button type="button" data-v="exterior" aria-pressed="true">Exterior</button>
+            <button type="button" data-v="interior" aria-pressed="false">Interior o bajo techo</button>
+          </div>
+        </div>
+
+        <div class="ctl">
+          <label for="simSoil"><span>Humedad del suelo</span><span class="val" id="simSoilVal">45 %</span></label>
+          <input id="simSoil" type="range" min="0" max="100" step="1" value="45">
+          <div class="band-demo" aria-hidden="true"><span class="safe"></span><span class="over"></span><span class="mark" id="simMark"></span></div>
+          <div class="band-ticks" aria-hidden="true"><span style="left:0">0</span><span style="left:30%;transform:translateX(-50%)">mín. 30</span><span style="left:70%;transform:translateX(-50%)">máx. 70</span><span style="right:0">100</span></div>
+        </div>
+
+        <div class="ctl">
+          <div class="lab">Lluvia prevista en las próximas 6 h</div>
+          <div class="seg" role="group" aria-label="Lluvia prevista" data-ctl="rain">
+            <button type="button" data-v="no" aria-pressed="true">No</button>
+            <button type="button" data-v="si" aria-pressed="false">Sí</button>
+          </div>
+        </div>
+
+        <div class="ctl">
+          <label for="simTemp"><span>Temperatura</span><span class="val" id="simTempVal">26 °C</span></label>
+          <input id="simTemp" type="range" min="15" max="45" step="1" value="26">
+        </div>
+
+        <div class="ctl">
+          <label for="simRecent"><span>Último riego</span></label>
+          <select id="simRecent">
+            <option value="no">Hace más de 10 minutos, o ninguno</option>
+            <option value="si">Hace menos de 10 minutos</option>
+          </select>
+        </div>
+
+        <div class="ctl">
+          <label for="simWait"><span>Venía posponiendo por lluvia</span></label>
+          <select id="simWait">
+            <option value="no">No, o hace poco</option>
+            <option value="si">Sí, hace más de 6 horas</option>
+          </select>
+        </div>
+
+        <div class="ctl">
+          <label for="simNode"><span>Nodo</span></label>
+          <select id="simNode">
+            <option value="on">Conectado y enviando datos</option>
+            <option value="off">Sin datos hace más de 15 minutos</option>
+          </select>
+        </div>
+
+        <p class="sim-params">Valores de ejemplo de la zona: humedad deseada 30–70 %, calor extremo desde 35 °C, emergencia a 10 puntos bajo el mínimo y espera máxima de 6 horas. Cada zona tiene los suyos.</p>
+      </div>
+
+      <div class="sim-out" aria-live="polite">
+        <h3>Lo que hace el sistema</h3>
+        <div id="simOut"></div>
+      </div>
+    </div>
+
+    <div class="fx-list">
+      <h3>Todas las funciones</h3>
+      <p>Cada grupo explica qué hace el sistema y cómo se comporta cuando algo sale distinto de lo normal.</p>
+
+      <div class="fx-acc">
+
+        <details open>
+          <summary><svg class="ic" aria-hidden="true"><use href="#i-gauge"/></svg><span><b>Medir y recibir los datos</b><small>Qué mide el nodo y qué pasa con cada lectura</small></span><svg class="ic chev" aria-hidden="true"><use href="#i-right"/></svg></summary>
+          <div class="fx-body">
+            <div class="cases-wrap"><table class="cases">
+              <thead><tr><th>Caso</th><th>Qué hace el sistema</th></tr></thead>
+              <tbody>
+                <tr><td>Funcionamiento normal</td><td>El nodo mide la humedad del suelo, la temperatura y la humedad del aire, y los envía junto con el estado de la bomba y la señal de WiFi (cada 30 segundos en las pruebas). Cada lectura se guarda y se muestra al instante.</td></tr>
+                <tr><td>El sensor de aire falla</td><td>El nodo omite la temperatura y la humedad del aire. El sistema sigue funcionando con el suelo y el dashboard oculta esas dos métricas.</td></tr>
+                <tr><td>La humedad del suelo da un valor imposible (fuera de 0–100 %)</td><td>La lectura se guarda como inválida, para poder revisarla, pero no se usa para decidir riegos. Suele indicar un sensor sin calibrar o un cable suelto.</td></tr>
+                <tr><td>La temperatura da un valor imposible</td><td>Se descarta solo ese dato; el resto de la lectura sigue siendo válida.</td></tr>
+                <tr><td>Llega una lectura que ya se tenía</td><td>No se duplica: cada medición se guarda una sola vez.</td></tr>
+                <tr><td>Llega una lectura vieja (más de 10 minutos)</td><td>Se guarda en el historial, pero no dispara ningún riego: se riega según cómo está el suelo ahora.</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+        </details>
+
+        <details>
+          <summary><svg class="ic" aria-hidden="true"><use href="#i-forecast"/></svg><span><b>Decidir el riego automático</b><small>Qué hace el sistema con cada lectura</small></span><svg class="ic chev" aria-hidden="true"><use href="#i-right"/></svg></summary>
+          <div class="fx-body">
+            <p class="fx-note" style="margin:0 0 10px">Con cada lectura válida y reciente, el sistema compara el suelo con los límites de la zona. Lo mismo se puede probar arriba, en el simulador.</p>
+            <div class="cases-wrap"><table class="cases">
+              <thead><tr><th>Situación</th><th>Qué hace el sistema</th></tr></thead>
+              <tbody>
+                <tr><td>Suelo más seco que el mínimo, sin lluvia prevista</td><td>Ordena regar durante los segundos configurados y levanta una alerta crítica.</td></tr>
+                <tr><td>Suelo seco, zona exterior y lluvia prevista</td><td>Pospone el riego y levanta una alerta preventiva. No riega mientras espere la lluvia.</td></tr>
+                <tr><td>Lo mismo, pero el suelo cae 10 puntos por debajo del mínimo</td><td>Emergencia: riega igual. La lluvia prevista no justifica dejar secar la planta.</td></tr>
+                <tr><td>Lo mismo, pero lleva más de 6 horas esperando la lluvia</td><td>Riega igual. El pronóstico puede fallar, así que la espera tiene un tope.</td></tr>
+                <tr><td>Suelo seco en una zona interior o bajo techo</td><td>Ignora la lluvia: riega y no pospone nunca.</td></tr>
+                <tr><td>Suelo más húmedo que el máximo</td><td>No riega y avisa del exceso de humedad.</td></tr>
+                <tr><td>Hace calor extremo y el suelo está algo seco</td><td>Riego breve preventivo y alerta de calor extremo.</td></tr>
+                <tr><td>Se regó hace menos de 10 minutos</td><td>No vuelve a regar: el agua tarda en llegar al sensor. Con telemetría frecuente, sin esta espera se regaría en cada lectura.</td></tr>
+                <tr><td>Humedad dentro del rango</td><td>No hace nada y cierra las alertas de humedad que estuvieran abiertas.</td></tr>
+                <tr><td>Cualquier decisión, incluso la de no regar</td><td>Queda registrada en el historial, una sola vez por ventana de espera, para poder explicar después por qué se hizo o no se hizo algo.</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+        </details>
+
+        <details>
+          <summary><svg class="ic" aria-hidden="true"><use href="#i-power"/></svg><span><b>Regar a mano</b><small>El botón «Regar ahora»</small></span><svg class="ic chev" aria-hidden="true"><use href="#i-right"/></svg></summary>
+          <div class="fx-body">
+            <div class="cases-wrap"><table class="cases">
+              <thead><tr><th>Caso</th><th>Qué hace el sistema</th></tr></thead>
+              <tbody>
+                <tr><td>Un administrador o técnico toca «Regar ahora»</td><td>Pide una duración, envía la orden al nodo y la registra como riego manual, con quién lo pidió. No espera la decisión automática ni respeta la espera de 10 minutos.</td></tr>
+                <tr><td>El usuario es visualizador</td><td>No puede regar: el botón no aparece y el servidor tampoco lo permite.</td></tr>
+                <tr><td>El nodo está sin conexión</td><td>Rechaza el pedido con un aviso: la orden no llegaría.</td></tr>
+                <tr><td>Ya hay un riego en curso en esa zona</td><td>Rechaza el pedido; solo se riega una vez a la vez.</td></tr>
+                <tr><td>Piden una duración muy larga</td><td>El nodo nunca riega más de 120 segundos por orden, aunque el pedido diga otra cosa.</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+        </details>
+
+        <details>
+          <summary><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg><span><b>Ejecutar y confirmar el riego</b><small>Seguridad de la bomba</small></span><svg class="ic chev" aria-hidden="true"><use href="#i-right"/></svg></summary>
+          <div class="fx-body">
+            <div class="cases-wrap"><table class="cases">
+              <thead><tr><th>Caso</th><th>Qué hace el sistema</th></tr></thead>
+              <tbody>
+                <tr><td>Llega una orden de riego</td><td>El nodo enciende la bomba, mide el tiempo él mismo y la apaga al cumplirse. Avisa al encender y al apagar, con la duración real.</td></tr>
+                <tr><td>Se corta la conexión durante el riego</td><td>La bomba se apaga igual: el tiempo lo cuenta el propio nodo, no la nube.</td></tr>
+                <tr><td>El nodo confirma</td><td>Solo el aviso del propio nodo confirma un riego. El estado de la bomba en la telemetría no alcanza, porque podría ser anterior a la orden.</td></tr>
+                <tr><td>No llega ninguna confirmación</td><td>Pasado el tiempo del riego más un margen, la orden se da por expirada y el riego queda marcado como fallido.</td></tr>
+                <tr><td>La bomba lleva demasiado encendida sin que suba la humedad</td><td>El nodo la corta por seguridad y el riego se marca como fallido (puede ser tanque vacío, manguera suelta o sensor desconectado).</td></tr>
+                <tr><td>El nodo arranca o se está actualizando</td><td>La bomba queda apagada: nunca arranca sola al encender la placa ni durante una actualización.</td></tr>
+                <tr><td>La bomba se enciende sin que nadie lo haya pedido</td><td>Se registra igual, como riego iniciado por el propio nodo.</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+        </details>
+
+        <details>
+          <summary><svg class="ic" aria-hidden="true"><use href="#i-bell"/></svg><span><b>Alertas y avisos</b><small>Cinco tipos, en pantalla y por email</small></span><svg class="ic chev" aria-hidden="true"><use href="#i-right"/></svg></summary>
+          <div class="fx-body">
+            <div class="cases-wrap"><table class="cases">
+              <thead><tr><th>Alerta</th><th>Cuándo se levanta</th><th>Cuándo se cierra</th></tr></thead>
+              <tbody>
+                <tr><td>Crítica</td><td>El suelo está bajo el mínimo y no hay razón para esperar. Se riega.</td><td>Sola, cuando la humedad vuelve al rango.</td></tr>
+                <tr><td>Preventiva</td><td>El suelo está bajo el mínimo pero se espera lluvia: el riego se pospone.</td><td>Cuando la humedad vuelve al rango, o cuando se riega por emergencia o por espera agotada.</td></tr>
+                <tr><td>Exceso de humedad</td><td>El suelo supera el máximo. No se riega.</td><td>Sola, al volver al rango.</td></tr>
+                <tr><td>Calor extremo</td><td>Temperatura sobre el umbral y suelo algo seco. Riego breve.</td><td>Sola, cuando la temperatura baja del umbral.</td></tr>
+                <tr><td>Fallo de sensor</td><td>La zona no envía datos por más de 15 minutos; queda marcada sin conexión.</td><td>Sola, cuando vuelven los datos.</td></tr>
+              </tbody>
+            </table></div>
+            <ul>
+              <li>Si la condición se repite, no se duplica la alerta ni se manda otro email: hay una sola abierta por tipo y zona.</li>
+              <li>Cada persona elige en Ajustes si quiere recibir emails y de qué tipos. Si desactiva un tipo, la alerta aparece igual en pantalla pero no le llega el correo.</li>
+              <li>Las alertas aparecen en el dashboard como aviso emergente, sin recargar, y se pueden consultar y resolver desde la sección Alertas.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details>
+          <summary><svg class="ic" aria-hidden="true"><use href="#i-cloud"/></svg><span><b>Pronóstico del clima</b><small>Para no regar de más y para planificar</small></span><svg class="ic chev" aria-hidden="true"><use href="#i-right"/></svg></summary>
+          <div class="fx-body">
+            <ul>
+              <li>Cada zona tiene una ubicación (latitud y longitud) y con ella se consulta el pronóstico de Open-Meteo, un servicio gratuito.</li>
+              <li>Se actualiza cada 3 horas y se guarda; zonas cercanas comparten el mismo pronóstico.</li>
+              <li>Para decidir se mira la probabilidad de lluvia de las próximas 6 horas contra el umbral de la zona.</li>
+              <li>Si el servicio no responde, se usa el último pronóstico guardado, así el riego no se frena por una falla externa.</li>
+              <li>El detalle de cada zona muestra el pronóstico a 5 días. Una zona sin ubicación simplemente no considera la lluvia.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details>
+          <summary><svg class="ic" aria-hidden="true"><use href="#i-chip"/></svg><span><b>Conexión del nodo</b><small>Qué pasa cuando se pierde o vuelve</small></span><svg class="ic chev" aria-hidden="true"><use href="#i-right"/></svg></summary>
+          <div class="fx-body">
+            <ul>
+              <li>Cualquier mensaje del nodo lo marca como conectado.</li>
+              <li>Si pasan más de 15 minutos sin datos, se levanta la alerta de fallo de sensor y la zona queda sin conexión, con sus tarjetas atenuadas.</li>
+              <li>Mientras no hay datos no se decide ningún riego, y el riego manual se rechaza.</li>
+              <li>Cuando vuelven los datos, la alerta se cierra sola y la zona vuelve a estar conectada.</li>
+              <li>Si el nodo guardó lecturas durante un corte y las reenvía, se registran como retransmitidas, sin duplicarse y sin disparar riegos.</li>
+              <li>El detalle de la zona muestra la señal de WiFi, la IP y la memoria libre del nodo, útil para diagnosticar.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details>
+          <summary><svg class="ic" aria-hidden="true"><use href="#i-sprout"/></svg><span><b>Zonas, macetas y especies</b><small>Cómo se organiza un vivero</small></span><svg class="ic chev" aria-hidden="true"><use href="#i-right"/></svg></summary>
+          <div class="fx-body">
+            <ul>
+              <li>Una <b>zona</b> es un conjunto de macetas con las mismas necesidades. Tiene su propio nodo, su especie y sus límites de humedad.</li>
+              <li>Las macetas de la zona comparten esos límites y se riegan juntas. Si hay plantas con necesidades distintas, van en zonas distintas.</li>
+              <li>Cada zona se marca como <b>exterior</b> (considera la lluvia) o <b>interior</b> (la ignora), y se configura cuánto puede caer en emergencia y cuánto esperar por lluvia.</li>
+              <li>Cada zona define también su duración de riego, el umbral de lluvia y el umbral de calor.</li>
+              <li>Al eliminar una zona primero se desactiva (deja de procesar datos y se oculta). Desde ahí se puede eliminar definitivamente, con sus lecturas, riegos y alertas.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details>
+          <summary><svg class="ic" aria-hidden="true"><use href="#i-monitor"/></svg><span><b>Dashboard e historial</b><small>Lo que se ve en pantalla</small></span><svg class="ic chev" aria-hidden="true"><use href="#i-right"/></svg></summary>
+          <div class="fx-body">
+            <ul>
+              <li><b>Resumen:</b> cuántas zonas están en rango, cuántas requieren atención, cuántas sin conexión y cuántas macetas hay en total.</li>
+              <li><b>Tarjetas:</b> humedad actual con su banda de límites, temperatura, aire, último riego y un indicador «Regando…» mientras la bomba está encendida.</li>
+              <li><b>Tiempo real:</b> todo se actualiza solo, sin recargar la página, y avisa cuando un riego se confirma o falla.</li>
+              <li><b>Detalle de la zona:</b> estado actual, gráfico de las últimas 24 horas, pronóstico a 5 días y las macetas que la componen.</li>
+              <li><b>Historial:</b> eventos de riego, lecturas y alertas, filtrables por fecha. Cada riego indica si fue automático o manual, quién lo pidió y si se confirmó.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details>
+          <summary><svg class="ic" aria-hidden="true"><use href="#i-users"/></svg><span><b>Usuarios y permisos</b><small>Quién puede hacer qué</small></span><svg class="ic chev" aria-hidden="true"><use href="#i-right"/></svg></summary>
+          <div class="fx-body">
+            <div class="cases-wrap"><table class="cases">
+              <thead><tr><th>Rol</th><th>Qué puede hacer</th></tr></thead>
+              <tbody>
+                <tr><td>Administrador</td><td>Todo: ve todas las zonas, las configura, riega y gestiona a los usuarios.</td></tr>
+                <tr><td>Técnico</td><td>Crea y configura sus zonas y puede regar a mano. Es el rol que se asigna al registrarse.</td></tr>
+                <tr><td>Visualizador</td><td>Solo mira el dashboard y el historial: no puede crear, cambiar ni regar nada.</td></tr>
+              </tbody>
+            </table></div>
+            <ul>
+              <li>Cada persona ve solo sus zonas (salvo el administrador).</li>
+              <li>La sesión se renueva sola mientras se usa y se cierra cuando vence, volviendo al inicio de sesión.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details>
+          <summary><svg class="ic" aria-hidden="true"><use href="#i-wrench"/></svg><span><b>Demostración y modo seguro</b><small>Para mostrar el sistema sin riesgos</small></span><svg class="ic chev" aria-hidden="true"><use href="#i-right"/></svg></summary>
+          <div class="fx-body">
+            <ul>
+              <li><b>Zonas de ejemplo:</b> se pueden cargar zonas con datos de demostración para mostrar varias zonas sin tener todos los nodos armados. Se rotulan «Zona de ejemplo» y su riego manual es simulado: no activa ninguna bomba.</li>
+              <li><b>Modo lectura:</b> un backend de desarrollo evalúa y registra lo que haría, pero no envía órdenes al nodo. Así solo el backend desplegado puede regar la bomba real, y nadie la activa sin querer desde una copia local.</li>
+              <li><b>Simulador de nodo:</b> imita a un nodo contra el mismo broker para probar el sistema sin hardware.</li>
+            </ul>
+          </div>
+        </details>
+
+      </div>
     </div>
   </div>
 </section>
@@ -1307,6 +1635,104 @@ html.present { scroll-snap-type: y mandatory; }
       <div class="layer-name"><svg class="ic" aria-hidden="true"><use href="#i-${icon}"/></svg><div><b>${esc(name)}</b><small>${esc(sub)}</small></div></div>
       <div class="techs">${items.map(([t, d, soon]) => `<div class="tech"><b>${esc(t)}${soon ? '<span class="soon">previsto</span>' : ''}</b><span>${esc(d)}</span></div>`).join('')}</div>
     </div>`).join('');
+
+  /* ═════════ 3b. Simulador de decisiones ═════════ */
+  const sim = { exposure: 'exterior', rain: 'no' };
+  const MIN = 30, MAX = 70, HEAT = 35, MARGIN = 10;
+
+  function decide(s) {
+    const out = [];
+    const add = (dot, key, title, text) => out.push({ dot, key, title, text });
+
+    if (s.node === 'off') {
+      add('d-soft', 'Decisión', 'No decide ningún riego', 'Sin datos del nodo no hay forma de saber cómo está el suelo. El riego manual también se rechaza.');
+      add('d-clay', 'Alerta', 'Fallo de sensor', 'Se levanta porque pasaron más de 15 minutos sin datos, y la zona queda sin conexión.');
+      add('d-leaf', 'Aviso', 'Email', 'Se envía a quien tenga activado este tipo de aviso. La alerta se cierra sola cuando vuelven los datos.');
+      return out;
+    }
+
+    const soil = s.soil;
+    const cooling = s.recent === 'si';
+    const rainy = s.exposure === 'exterior' && s.rain === 'si';
+    const alerts = [];
+    let postponed = false;
+
+    if (soil < MIN) {
+      const emergency = rainy && soil < MIN - MARGIN;
+      const expired = rainy && !emergency && s.wait === 'si';
+      if (rainy && !emergency && !expired && !cooling) {
+        add('d-sun', 'Decisión', 'Pospone el riego', 'El suelo está seco, pero se espera lluvia y la zona es exterior. Espera hasta 6 horas antes de regar igual.');
+        alerts.push('Preventiva');
+        postponed = true;
+      } else {
+        let why = 'No se espera lluvia, así que no hay razón para esperar.';
+        if (s.exposure === 'interior') why = 'La zona es interior: la lluvia no la moja, así que se ignora el pronóstico.';
+        else if (emergency) why = 'Está más de 10 puntos bajo el mínimo: es una emergencia y se riega aunque se espere lluvia.';
+        else if (expired) why = 'Llevaba más de 6 horas esperando una lluvia que no llegó: se riega igual.';
+        else if (rainy && cooling) why = 'Hay lluvia prevista, pero se acaba de regar.';
+        if (cooling) {
+          add('d-sun', 'Decisión', 'Espera: se regó hace poco', 'El agua tarda unos minutos en llegar al sensor. No vuelve a regar hasta cumplir los 10 minutos. ' + why);
+        } else {
+          add('d-water', 'Decisión', 'Riega unos segundos', why + ' Envía la orden al nodo y la confirmación queda registrada.');
+        }
+        alerts.push('Crítica');
+      }
+    } else if (soil > MAX) {
+      add('d-clay', 'Decisión', 'No riega', 'El suelo está más húmedo que el máximo de la zona.');
+      alerts.push('Exceso de humedad');
+    } else {
+      add('d-leaf', 'Decisión', 'No hace nada', 'La humedad está dentro del rango deseado. Si había alertas de humedad abiertas, las cierra.');
+    }
+
+    if (s.temp >= HEAT && soil < MIN + 10) {
+      alerts.push('Calor extremo');
+      let extra;
+      if (cooling) extra = ' Como se regó hace poco, no se agrega otro riego.';
+      else if (soil >= MIN) extra = ' Hace un riego breve preventivo de unos 3 segundos.';
+      else if (postponed) extra = ' Igual hace un riego breve de unos 3 segundos por el calor.';
+      else extra = ' El riego que se ordena cubre también el calor.';
+      add('d-sun', 'Calor', 'Hace calor con el suelo algo seco', 'Temperatura sobre el umbral de 35 °C con humedad baja.' + extra);
+    }
+
+    if (alerts.length) {
+      add('d-clay', 'Alertas', alerts.join(' + '), alerts.length > 1 ? 'Se levantan a la vez y cada una se cierra sola cuando desaparece su condición.' : 'Se cierra sola cuando desaparece la condición.');
+      add('d-leaf', 'Aviso', 'Pantalla y email', 'Aparece como aviso emergente en el dashboard y se envía por email a quien tenga activado ese tipo.');
+    }
+    add('d-soft', 'Registro', 'Queda en el historial', 'La decisión se guarda como evento, incluso si fue no regar, para poder explicarla después.');
+    return out;
+  }
+
+  function renderSim() {
+    const s = {
+      exposure: sim.exposure, rain: sim.rain,
+      soil: Number($('#simSoil').value), temp: Number($('#simTemp').value),
+      recent: $('#simRecent').value, wait: $('#simWait').value, node: $('#simNode').value
+    };
+    $('#simSoilVal').textContent = `${s.soil} %`;
+    $('#simTempVal').textContent = `${s.temp} °C`;
+    const mark = $('#simMark');
+    mark.style.left = `${s.soil}%`;
+    mark.classList.toggle('dry', s.soil < MIN);
+    mark.classList.toggle('wet', s.soil > MAX);
+    $('#simOut').innerHTML = decide(s).map((r) => `
+      <div class="out-row">
+        <span class="dot ${r.dot}" aria-hidden="true"></span>
+        <span class="k">${esc(r.key)}</span>
+        <div class="v"><b>${esc(r.title)}</b><span>${esc(r.text)}</span></div>
+      </div>`).join('');
+  }
+
+  $$('.seg').forEach((seg) => {
+    seg.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      sim[seg.dataset.ctl] = b.dataset.v;
+      $$('button', seg).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      renderSim();
+    });
+  });
+  ['#simSoil', '#simTemp', '#simRecent', '#simWait', '#simNode'].forEach((id) => $(id).addEventListener('input', renderSim));
+  renderSim();
 
   /* ═════════ 4. Navegación y modo presentación ═════════ */
   const sections = [$('#inicio'), ...$$('main > section')];

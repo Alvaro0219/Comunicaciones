@@ -5,6 +5,7 @@
         <h3 class="gda-pot-name">{{ pot.name }}</h3>
         <div v-if="pot.species || pot.plants?.length" class="gda-pot-species">
           <span v-if="pot.species">{{ pot.species }}</span>
+          <span v-if="pot.exposure === 'interior'">interior</span>
           <span v-if="pot.plants?.length" class="gda-mono">{{ pot.plants.length }} {{ pot.plants.length === 1 ? 'maceta' : 'macetas' }}</span>
         </div>
         <div class="gda-pot-node">

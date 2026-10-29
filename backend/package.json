@@ -8,6 +8,7 @@
     "start": "node src/app.js",
     "seed:admin": "node scripts/seedAdmin.js",
     "seed:demo": "node scripts/seedDemo.js",
+    "test:alertas": "node scripts/testAlertas.js",
     "e2e": "node scripts/e2e.js"
   },
   "dependencies": {

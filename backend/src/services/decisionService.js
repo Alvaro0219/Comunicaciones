@@ -1,4 +1,5 @@
 import { Event } from '../models/Event.js';
+import { Alert } from '../models/Alert.js';
 import { env } from '../config/env.js';
 import { broadcast } from '../realtime/sseHub.js';
 import { getForecast, rainExpected } from './weatherService.js';
@@ -37,8 +38,11 @@ export async function evaluateReading(pot, reading) {
   const snapshot = { soilMoisture: soil, temperature: temp };
   const backendDecides = env.irrigationControl === 'backend';
 
+  // Una zona interior no se moja: el pronóstico de lluvia no la afecta
+  const considerRain = pot.exposure !== 'interior';
+
   let forecast = null;
-  if (backendDecides && pot.location?.lat != null && pot.location?.lon != null) {
+  if (backendDecides && considerRain && pot.location?.lat != null && pot.location?.lon != null) {
     forecast = await getForecast(pot.location.lat, pot.location.lon);
   }
 
@@ -50,14 +54,43 @@ export async function evaluateReading(pot, reading) {
   };
 
   if (soil < pot.minMoisture) {
+    // Si el suelo saltó de "demasiado húmedo" a "seco" sin pasar por el rango, esa alerta ya no aplica
+    await resolveAlerts(pot, 'exceso_humedad');
     if (!backendDecides) {
       await raiseAlert(pot, 'critica',
         `Humedad baja (${soil}%) en "${pot.name}": por debajo del mínimo configurado (${pot.minMoisture}%)`,
         { soilMoisture: soil });
     } else {
-      const { expected, maxProb } = rainExpected(forecast, 6, pot.rainProbThreshold);
+      const { expected, maxProb } = considerRain
+        ? rainExpected(forecast, 6, pot.rainProbThreshold)
+        : { expected: false, maxProb: 0 };
 
+      // La lluvia prevista nunca deja secar la planta: se riega igual si el suelo está en
+      // emergencia o si la espera por lluvia ya duró demasiado (la alerta preventiva activa
+      // marca desde cuándo se viene posponiendo; se resuelve sola al volver a rango).
+      let motivo = considerRain ? 'sin lluvia prevista' : 'zona interior: no considera la lluvia';
+      let reason = 'humedad_bajo_minimo';
+      let rainBlocks = expected;
       if (expected) {
+        const margin = pot.emergencyMarginPts ?? 10;
+        const waitMs = (pot.maxPostponeHours ?? 6) * 60 * 60 * 1000;
+        const postponing = await Alert.findOne({ potId: pot._id, type: 'preventiva', status: 'activa' }).lean();
+        if (soil < pot.minMoisture - margin) {
+          rainBlocks = false;
+          reason = 'emergencia_humedad';
+          motivo = `emergencia: ${Math.round((pot.minMoisture - soil) * 10) / 10} puntos bajo el mínimo, se riega aunque haya lluvia prevista`;
+        } else if (postponing && Date.now() - new Date(postponing.createdAt).getTime() >= waitMs) {
+          rainBlocks = false;
+          reason = 'espera_lluvia_agotada';
+          motivo = `llevaba más de ${pot.maxPostponeHours ?? 6} h esperando la lluvia prevista, se riega`;
+        } else if (await isCoolingDown()) {
+          // Se acaba de regar: no anunciar otra posposición mientras el suelo refleja el agua
+          rainBlocks = false;
+          motivo = 'lluvia prevista, pero se regó hace poco';
+        }
+      }
+
+      if (rainBlocks) {
         if (!(await recentEvent(pot._id, ['riego_pospuesto']))) {
           const event = await Event.create({
             potId: pot._id,
@@ -81,7 +114,7 @@ export async function evaluateReading(pot, reading) {
             pot,
             durationSec: pot.irrigationDurationSec,
             origin: 'auto',
-            reason: 'humedad_bajo_minimo',
+            reason,
             readingSnapshot: snapshot
           });
           if (result.skipped) {
@@ -89,12 +122,16 @@ export async function evaluateReading(pot, reading) {
               || 'riego no emitido';
           }
         }
+        // Ya no se pospone: la alerta preventiva (si había) deja de aplicar
+        await resolveAlerts(pot, 'preventiva');
         await raiseAlert(pot, 'critica',
-          `Humedad crítica (${soil}%) en "${pot.name}" sin lluvia prevista: ${note}`,
+          `Humedad crítica (${soil}%) en "${pot.name}" (${motivo}): ${note}`,
           { soilMoisture: soil });
       }
     }
   } else if (soil > pot.maxMoisture) {
+    // Lo mismo al revés: de "seco" a "demasiado húmedo" sin pasar por el rango
+    await resolveAlerts(pot, ['critica', 'preventiva']);
     if (backendDecides && !(await recentEvent(pot._id, ['riego_no_aplicado']))) {
       const event = await Event.create({
         potId: pot._id,

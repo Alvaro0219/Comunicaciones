@@ -116,7 +116,8 @@ ESP32 mide ─► telemetría ─► broker ─► backend decide ─► orden �
 | Situación | Qué hace el backend |
 |---|---|
 | Humedad **bajo el mínimo** de la maceta, sin lluvia prevista (6 h) | Ordena regar `irrigationDurationSec` + alerta crítica |
-| Humedad bajo el mínimo, **con lluvia prevista** | Pospone (evento `riego_pospuesto`) + alerta preventiva |
+| Humedad bajo el mínimo, **con lluvia prevista** (zona `exterior`) | Pospone (evento `riego_pospuesto`) + alerta preventiva. Riega igual si la humedad cae más de `emergencyMarginPts` (10) bajo el mínimo o si la espera supera `maxPostponeHours` (6 h) |
+| Humedad bajo el mínimo en una zona **`interior`** | Ignora la lluvia: ordena regar + alerta crítica (nunca pospone) |
 | Humedad **sobre el máximo** | No riega (evento `riego_no_aplicado`) + alerta de exceso de humedad |
 | **Calor extremo** + humedad baja (requiere temperatura) | Riego breve + alerta |
 | Botón **"Regar ahora"** | Ordena regar ya, ignorando la espera entre riegos |

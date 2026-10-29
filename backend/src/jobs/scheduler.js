@@ -8,7 +8,7 @@ import { refreshAllPotLocations } from '../services/weatherService.js';
 
 // Macetas activas que dejaron de reportar por más de SENSOR_TIMEOUT_MIN:
 // alerta de fallo de sensor + marcado offline visible en el dashboard.
-async function checkSensorTimeouts() {
+export async function checkSensorTimeouts() {
   const cutoff = new Date(Date.now() - env.sensorTimeoutMin * 60 * 1000);
   const silent = await Pot.find({
     isActive: true,
