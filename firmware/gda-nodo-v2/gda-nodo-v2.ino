@@ -1,5 +1,5 @@
 /* ============================================================
-   GEMELO DIGITAL AGRICOLA (GDA) - Nodo IoT v2.1
+   GEMELO DIGITAL AGRICOLA (GDA) - Nodo IoT v2.5
    WiFiMulti + HiveMQ Cloud (TLS) + OTA + Telnet
 
    EL NODO NO DECIDE: MIDE Y EJECUTA.
@@ -71,12 +71,13 @@ const unsigned long AMBIENTE_MS = 5000;
 const unsigned long AMBIENTE_VIGENCIA_MS = 120000;
 
 /* ---------- RELE / BOMBA ---------- */
-const int PIN_RELE = 26;
+const int PIN_RELE = 27;   // IN del rele (antes 26; se movio al 27)
 
-// La mayoria de los modulos de rele se activan con LOW.
-// Con modulo activo-bajo alimentado a 5 V, los 3,3 V de un HIGH del ESP32 no
-// alcanzan para apagarlo: por eso "apagado" deja el pin flotante (INPUT) y
-// "encendido" lo lleva a LOW. Solo poner false si el modulo es activo-alto.
+// Modulo ACTIVO EN BAJO (verificado: con v2.4 en false, GPIO 27 en LOW dejaba el LED
+// verde prendido con bomba:false). VCC y GND del modulo van a la columna de 3V3:
+// alimentado a 3,3 V, el HIGH del ESP32 SI alcanza para apagarlo (con 5 V no alcanzaba,
+// por eso antes quedaba siempre activado).
+// Con true: HIGH = apagado, LOW = encendido.
 const bool RELE_ACTIVO_BAJO = true;
 
 // Tope duro de seguridad por orden. El backend pide una duracion, pero el nodo
@@ -161,18 +162,9 @@ void log(const String& msg) {
 
 /* ---------- RELE ---------- */
 void escribirRele(bool encender) {
-  if (RELE_ACTIVO_BAJO) {
-    // Encendido: salida en LOW. Apagado: pin flotante (como desconectar IN).
-    if (encender) {
-      digitalWrite(PIN_RELE, LOW);
-      pinMode(PIN_RELE, OUTPUT);
-    } else {
-      pinMode(PIN_RELE, INPUT);
-    }
-    return;
-  }
-  pinMode(PIN_RELE, OUTPUT);
-  digitalWrite(PIN_RELE, encender ? HIGH : LOW);
+  // Traduce "encender" al nivel electrico segun el tipo de modulo
+  bool nivel = RELE_ACTIVO_BAJO ? !encender : encender;
+  digitalWrite(PIN_RELE, nivel ? HIGH : LOW);
 }
 
 /* ---------- SENSOR SUELO ---------- */
@@ -394,12 +386,18 @@ void reconectarMQTT() {
 
 /* ---------- SETUP ---------- */
 void setup() {
-  // Rele apagado ANTES que nada, para que la bomba no arranque al encender
+  // Rele APAGADO antes que nada: primero se fija el nivel de "apagado" y
+  // recien despues el pin pasa a salida, asi no hay un pulso que prenda la bomba.
   escribirRele(false);
+  pinMode(PIN_RELE, OUTPUT);
+  escribirRele(false);
+  bombaEncendida = false;
 
   Serial.begin(115200);
   delay(500);
-  Serial.println("\n=== GDA nodo v2.1 (mide y ejecuta) ===");
+  Serial.println("\n=== GDA nodo v2.5 (mide y ejecuta) ===");
+  Serial.println(String("RELE: apagado | GPIO ") + PIN_RELE + " = " + (digitalRead(PIN_RELE) ? "HIGH" : "LOW")
+                 + " | modo " + (RELE_ACTIVO_BAJO ? "activo-bajo" : "activo-alto"));
 
   analogReadResolution(12);
   analogSetPinAttenuation(PIN_SUELO, ADC_11db);  // rango completo 0-3.3V
