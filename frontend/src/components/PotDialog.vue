@@ -1,100 +1,153 @@
 <template>
-  <q-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)">
-    <q-card class="gda-pot-dialog">
-      <q-card-section>
-        <div class="text-h6">{{ isEdit ? 'Editar zona' : 'Nueva zona' }}</div>
-      </q-card-section>
-
-      <q-card-section class="q-gutter-y-sm">
-        <q-input v-model="form.name" label="Nombre de la zona" dense outlined :rules="[v => !!v || 'Requerido']" />
+  <AppDialog
+    :model-value="modelValue"
+    :title="isEdit ? 'Editar zona' : 'Nueva zona'"
+    :subtitle="isEdit ? form.nodeId : 'Un nodo con sus macetas y sus límites de humedad'"
+    icon="grass"
+    width="680px"
+    :submit-label="isEdit ? 'Guardar cambios' : 'Crear zona'"
+    :loading="saving"
+    @update:model-value="$emit('update:modelValue', $event)"
+    @submit="submit"
+  >
+    <!-- Identificación -->
+    <section class="gda-form-section">
+      <div class="gda-form-section-head">
+        <div class="gda-form-icon"><q-icon name="badge" size="20px" /></div>
+        <div>
+          <div class="gda-form-section-title">Identificación</div>
+          <div class="gda-form-section-hint">Cómo se llama la zona y qué nodo la mide</div>
+        </div>
+      </div>
+      <div class="gda-form-grid">
+        <q-input v-model="form.name" label="Nombre de la zona" outlined :rules="[v => !!v || 'Requerido']" lazy-rules>
+          <template #prepend><q-icon name="label" /></template>
+        </q-input>
+        <q-input v-model="form.species" label="Especie o cultivo" outlined hint="Ej.: Lavanda, helechos">
+          <template #prepend><q-icon name="eco" /></template>
+        </q-input>
         <q-input
-          v-model="form.species" label="Especie o cultivo" dense outlined
-          hint="Las macetas de la zona comparten estos límites de humedad"
-        />
+          v-model="form.nodeId" label="ID del nodo (ESP32)" outlined :disable="isEdit"
+          hint="3-64 caracteres: letras, números, - y _" class="is-wide"
+        >
+          <template #prepend><q-icon name="memory" /></template>
+        </q-input>
         <q-input
-          v-model="form.plantsText" type="textarea" autogrow label="Macetas de la zona" dense outlined
+          v-model="form.plantsText" type="textarea" autogrow label="Macetas de la zona" outlined class="is-wide"
           hint="Una por línea (opcional). Son descriptivas: el nodo mide la zona completa"
-        />
+        >
+          <template #prepend><q-icon name="local_florist" /></template>
+        </q-input>
+      </div>
+    </section>
+
+    <!-- Humedad deseada -->
+    <section class="gda-form-section">
+      <div class="gda-form-section-head">
+        <div class="gda-form-icon gda-form-icon--water"><q-icon name="water_drop" size="20px" /></div>
+        <div>
+          <div class="gda-form-section-title">Humedad deseada del suelo</div>
+          <div class="gda-form-section-hint">Por debajo del mínimo se riega; por encima del máximo se avisa</div>
+        </div>
+      </div>
+      <div class="gda-range-readout">
+        <span class="gda-mono">mín <b>{{ form.minMoisture }}%</b></span>
+        <span class="gda-mono">máx <b>{{ form.maxMoisture }}%</b></span>
+      </div>
+      <q-range
+        v-model="moistureRange" :min="0" :max="100" :step="1" :min-range="5"
+        color="primary" track-color="grey-4" thumb-size="20px" label
+        :left-label-value="`${moistureRange.min}%`" :right-label-value="`${moistureRange.max}%`"
+        class="q-mx-sm"
+      />
+      <div class="gda-form-grid q-mt-md">
+        <q-input v-model.number="form.irrigationDurationSec" type="number" label="Duración del riego" suffix="seg" outlined>
+          <template #prepend><q-icon name="timer" /></template>
+        </q-input>
+      </div>
+    </section>
+
+    <!-- Lluvia -->
+    <section class="gda-form-section">
+      <div class="gda-form-section-head">
+        <div class="gda-form-icon gda-form-icon--water"><q-icon name="cloud" size="20px" /></div>
+        <div>
+          <div class="gda-form-section-title">Lluvia</div>
+          <div class="gda-form-section-hint">Cuándo el pronóstico puede posponer un riego</div>
+        </div>
+      </div>
+      <SegmentedControl
+        v-model="form.exposure" label="Exposición de la zona"
+        :options="[
+          { label: 'Exterior', value: 'exterior', icon: 'park' },
+          { label: 'Interior o bajo techo', value: 'interior', icon: 'home' }
+        ]"
+      />
+      <div v-if="form.exposure === 'exterior'" class="gda-form-grid q-mt-md">
+        <q-input v-model.number="form.rainProbThreshold" type="number" label="Umbral de lluvia" suffix="%" outlined>
+          <template #prepend><q-icon name="umbrella" /></template>
+        </q-input>
         <q-input
-          v-model="form.nodeId" label="ID del nodo (ESP32)" dense outlined
-          :disable="isEdit"
-          hint="3-64 caracteres: letras, números, - y _"
-        />
-        <div class="row q-col-gutter-sm">
-          <div class="col-6">
-            <q-input v-model.number="form.minMoisture" type="number" label="Humedad mínima (%)" dense outlined />
-          </div>
-          <div class="col-6">
-            <q-input v-model.number="form.maxMoisture" type="number" label="Humedad máxima (%)" dense outlined />
-          </div>
-        </div>
-        <div class="row q-col-gutter-sm">
-          <div class="col-6">
-            <q-input v-model.number="form.irrigationDurationSec" type="number" label="Duración riego (s)" dense outlined />
-          </div>
-          <div v-if="form.exposure === 'exterior'" class="col-6">
-            <q-input v-model.number="form.rainProbThreshold" type="number" label="Umbral prob. lluvia (%)" dense outlined />
-          </div>
-        </div>
-        <div class="text-caption text-grey-7 q-mt-sm">Lluvia</div>
-        <q-btn-toggle
-          v-model="form.exposure" no-caps unelevated spread toggle-color="primary"
-          :options="[
-            { label: 'Exterior (considera la lluvia)', value: 'exterior' },
-            { label: 'Interior o bajo techo', value: 'interior' }
-          ]"
-        />
-        <div v-if="form.exposure === 'exterior'" class="row q-col-gutter-sm">
-          <div class="col-6">
-            <q-input
-              v-model.number="form.emergencyMarginPts" type="number" label="Emergencia (puntos bajo el mínimo)" dense outlined
-              hint="Si cae tanto, riega aunque llueva"
-            />
-          </div>
-          <div class="col-6">
-            <q-input
-              v-model.number="form.maxPostponeHours" type="number" label="Espera máxima por lluvia (h)" dense outlined
-              hint="Pasado ese tiempo, riega igual"
-            />
-          </div>
-        </div>
-        <div v-else class="text-caption text-grey-7">Esta zona ignora el pronóstico: no se pospone el riego por lluvia.</div>
+          v-model.number="form.emergencyMarginPts" type="number" label="Emergencia" suffix="puntos" outlined
+          hint="Si cae tanto bajo el mínimo, riega aunque llueva"
+        >
+          <template #prepend><q-icon name="emergency" /></template>
+        </q-input>
+        <q-input
+          v-model.number="form.maxPostponeHours" type="number" label="Espera máxima por lluvia" suffix="h" outlined
+          hint="Pasado ese tiempo, riega igual"
+        >
+          <template #prepend><q-icon name="hourglass_bottom" /></template>
+        </q-input>
+      </div>
+      <p v-else class="gda-form-section-hint q-mt-md q-mb-none">Esta zona ignora el pronóstico: nunca se pospone el riego por lluvia.</p>
+    </section>
 
-        <div class="row q-col-gutter-sm q-mt-xs">
-          <div class="col-6">
-            <q-input v-model.number="form.heatTempThreshold" type="number" label="Umbral calor (°C)" dense outlined />
-          </div>
-          <div class="col-6">
-            <q-input v-model.number="form.heatIrrigationDurationSec" type="number" label="Riego breve calor (s)" dense outlined />
-          </div>
+    <!-- Calor -->
+    <section class="gda-form-section">
+      <div class="gda-form-section-head">
+        <div class="gda-form-icon gda-form-icon--sun"><q-icon name="device_thermostat" size="20px" /></div>
+        <div>
+          <div class="gda-form-section-title">Calor extremo</div>
+          <div class="gda-form-section-hint">Riego breve preventivo cuando hace mucho calor y el suelo está algo seco</div>
         </div>
+      </div>
+      <div class="gda-form-grid">
+        <q-input v-model.number="form.heatTempThreshold" type="number" label="Umbral de calor" suffix="°C" outlined>
+          <template #prepend><q-icon name="local_fire_department" /></template>
+        </q-input>
+        <q-input v-model.number="form.heatIrrigationDurationSec" type="number" label="Riego breve" suffix="seg" outlined>
+          <template #prepend><q-icon name="timer" /></template>
+        </q-input>
+      </div>
+    </section>
 
-        <div class="text-caption text-grey-7 q-mt-sm">Ubicación (para el pronóstico meteorológico)</div>
-        <div class="row q-col-gutter-sm">
-          <div class="col-4">
-            <q-input v-model.number="form.lat" type="number" label="Latitud" dense outlined />
-          </div>
-          <div class="col-4">
-            <q-input v-model.number="form.lon" type="number" label="Longitud" dense outlined />
-          </div>
-          <div class="col-4">
-            <q-input v-model="form.locationLabel" label="Etiqueta" dense outlined />
-          </div>
+    <!-- Ubicación -->
+    <section class="gda-form-section">
+      <div class="gda-form-section-head">
+        <div class="gda-form-icon"><q-icon name="location_on" size="20px" /></div>
+        <div>
+          <div class="gda-form-section-title">Ubicación</div>
+          <div class="gda-form-section-hint">Para consultar el pronóstico del clima (con signo, ej.: -31.42)</div>
         </div>
+      </div>
+      <div class="gda-form-grid">
+        <q-input v-model.number="form.lat" type="number" label="Latitud" outlined step="any" />
+        <q-input v-model.number="form.lon" type="number" label="Longitud" outlined step="any" />
+        <q-input v-model="form.locationLabel" label="Etiqueta del lugar" outlined class="is-wide" />
+      </div>
+    </section>
 
-        <q-toggle v-if="isEdit" v-model="form.isActive" label="Zona activa" />
-      </q-card-section>
-
-      <q-card-actions align="right">
-        <q-btn flat label="Cancelar" v-close-popup />
-        <q-btn color="primary" :label="isEdit ? 'Guardar' : 'Crear'" :loading="saving" @click="submit" />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
+    <section v-if="isEdit" class="gda-form-section">
+      <q-toggle v-model="form.isActive" label="Zona activa" color="primary" />
+    </section>
+  </AppDialog>
 </template>
 
 <script setup>
 import { reactive, computed, watch } from 'vue';
+import AppDialog from './AppDialog.vue';
+import SegmentedControl from './SegmentedControl.vue';
 
 const props = defineProps({
   modelValue: Boolean,
@@ -126,6 +179,12 @@ const defaults = () => ({
 });
 
 const form = reactive(defaults());
+
+// El control de rango edita mínimo y máximo a la vez
+const moistureRange = computed({
+  get: () => ({ min: form.minMoisture, max: form.maxMoisture }),
+  set: (v) => { form.minMoisture = v.min; form.maxMoisture = v.max; }
+});
 
 watch(() => [props.modelValue, props.pot], () => {
   if (!props.modelValue) return;
@@ -179,5 +238,12 @@ function submit() {
 </script>
 
 <style scoped>
-.gda-pot-dialog { width: 560px; max-width: 95vw; }
+.gda-range-readout {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--gda-ink-soft);
+  margin-bottom: 18px;
+}
+.gda-range-readout b { color: var(--gda-ink); font-size: 15px; }
 </style>

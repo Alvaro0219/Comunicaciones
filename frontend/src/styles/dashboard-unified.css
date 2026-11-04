@@ -1,42 +1,84 @@
 /* Clases compartidas entre páginas del layout de dashboard (prefijo gda-) */
 
+/* ── Estructura de página ── */
 .gda-page-shell {
-  padding: 26px 24px 40px;
-  max-width: 1280px;
+  padding: 28px 28px 48px;
+  max-width: 1320px;
   margin: 0 auto;
 }
 
 .gda-page-header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
-
+.gda-page-heading { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.gda-page-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--gda-pine);
+  color: var(--gda-leaf-bright);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
 .gda-page-title {
   font-family: var(--gda-font-display);
   font-size: 26px;
   font-weight: 800;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
   color: var(--gda-ink);
   margin: 0;
 }
-
 .gda-page-subtitle {
-  font-size: 13.5px;
+  font-size: 14px;
   color: var(--gda-ink-soft);
-  margin: 4px 0 0;
+  margin: 3px 0 0;
 }
+.gda-page-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
+/* ── Paneles: contenedor único de información ── */
+.gda-panel,
 .gda-section-card {
   background: var(--gda-card);
   border: 1px solid var(--gda-hairline);
   border-radius: 14px;
-  padding: 18px;
 }
-
+.gda-section-card { padding: 18px; }
+.gda-panel { overflow: hidden; }
+.gda-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  row-gap: 4px;
+  border-bottom: 1px solid var(--gda-hairline);
+}
+.gda-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--gda-font-display);
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--gda-ink);
+  margin: 0;
+}
+.gda-panel-title .q-icon { color: var(--gda-leaf); }
+.gda-panel-meta {
+  font-family: var(--gda-font-mono);
+  font-size: 11.5px;
+  color: var(--gda-ink-soft);
+}
+.gda-panel-body { padding: 20px; }
+.gda-panel-body--flush { padding: 0; }
 .gda-card-title {
   font-family: var(--gda-font-display);
   font-size: 15px;
@@ -47,95 +89,232 @@
 
 .gda-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 18px;
 }
 
-/* Lecturas de sensores: siempre en mono, como lectura de instrumento */
-.gda-metric {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
+/* ── Lecturas: siempre en mono, como instrumento ── */
+.gda-metric { display: flex; flex-direction: column; gap: 4px; }
 .gda-metric-value {
   font-family: var(--gda-font-mono);
-  font-size: 21px;
+  font-size: 22px;
   font-weight: 600;
   color: var(--gda-ink);
   font-variant-numeric: tabular-nums;
+  line-height: 1.1;
 }
-.gda-metric-label {
+.gda-metric-label,
+.gda-label {
+  font-family: var(--gda-font-mono);
   font-size: 10.5px;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   color: var(--gda-ink-soft);
 }
+.gda-mono { font-family: var(--gda-font-mono); font-variant-numeric: tabular-nums; }
 
-.gda-mono {
-  font-family: var(--gda-font-mono);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Tablas dentro de section-cards: encabezados como rótulos de instrumento */
-.gda-section-card .q-table th {
-  font-family: var(--gda-font-mono);
-  font-size: 10.5px;
+/* ── Chips de estado ── */
+.gda-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  line-height: 1.5;
+  white-space: nowrap;
+  background: var(--gda-mist);
   color: var(--gda-ink-soft);
 }
-.gda-section-card .q-table td {
-  font-size: 13px;
-  color: var(--gda-ink);
-}
+.gda-chip i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.gda-chip .q-icon { font-size: 14px; width: 14px; height: 14px; min-width: 14px; }
+.gda-chip--ok { background: var(--gda-leaf-tint); color: #2D5C3A; }
+.gda-chip--water { background: var(--gda-water-tint); color: #1F5F80; }
+.gda-chip--warn { background: #F7ECD9; color: #7A5A18; }
+.gda-chip--crit { background: var(--gda-clay-tint); color: #8A3F20; }
+.gda-chip--dark { background: var(--gda-pine); color: #D6E8D4; }
 
-.gda-badge-online { color: var(--gda-leaf); }
-.gda-badge-offline { color: var(--gda-clay); }
-
-/* Indicador de nodo conectado: punto con pulso suave */
+/* Indicador de nodo conectado: LED con pulso suave */
 .gda-dot {
   display: inline-block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--gda-ink-soft);
+  background: #A7B3A9;
   flex-shrink: 0;
 }
-.gda-dot--on {
-  background: var(--gda-leaf);
-  animation: gda-pulse 2.4s ease-in-out infinite;
-}
+.gda-dot--on { background: var(--gda-leaf); animation: gda-pulse 2.4s ease-in-out infinite; }
 @keyframes gda-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(62, 124, 79, 0.35); }
   50% { box-shadow: 0 0 0 5px rgba(62, 124, 79, 0); }
 }
 
-/* Resumen de zonas (cabecera del dashboard) */
+/* ── Control segmentado (filtros y pestañas) ── */
+.gda-seg {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  background: #E6ECE3;
+  border-radius: 10px;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.gda-seg button {
+  font: 600 13px var(--gda-font-body);
+  color: var(--gda-ink-soft);
+  background: transparent;
+  border: 0;
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.gda-seg button:hover { color: var(--gda-ink); }
+.gda-seg button[aria-pressed="true"] {
+  background: var(--gda-card);
+  color: var(--gda-ink);
+  box-shadow: 0 1px 2px rgba(31, 42, 34, 0.16);
+}
+.gda-seg .gda-seg-count {
+  font-family: var(--gda-font-mono);
+  font-size: 11px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(31, 42, 34, 0.08);
+}
+
+/* ── Resumen de zonas ── */
 .gda-summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 0;
-  margin-bottom: 18px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 20px;
   background: var(--gda-card);
   border: 1px solid var(--gda-hairline);
   border-radius: 14px;
+  overflow: hidden;
 }
 .gda-summary-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 14px 20px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 14px;
+  padding: 18px 22px;
   border-right: 1px solid var(--gda-hairline);
 }
 .gda-summary-item:last-child { border-right: 0; }
+.gda-summary-led { width: 10px; height: 10px; border-radius: 50%; background: #A7B3A9; }
+.gda-summary-led--ok { background: var(--gda-leaf); }
+.gda-summary-led--attention { background: var(--gda-clay); }
+.gda-summary-led--water { background: var(--gda-water); }
 .gda-summary-value {
   font-family: var(--gda-font-mono);
   font-variant-numeric: tabular-nums;
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 600;
-  line-height: 1.1;
+  line-height: 1.05;
   color: var(--gda-ink);
 }
-.gda-summary-value--ok { color: var(--gda-leaf); }
-.gda-summary-value--attention { color: var(--gda-clay); }
+.gda-summary-text { display: flex; flex-direction: column; gap: 4px; }
+
+/* ── Barra de herramientas de listados ── */
+.gda-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.gda-toolbar .gda-search { width: 260px; max-width: 100%; }
+
+/* ── Tabla responsive: tabla en escritorio, tarjetas en móvil ── */
+.gda-table.q-table__container { background: transparent; }
+.gda-table thead tr { background: #F6F9F4; }
+.gda-table th {
+  font-family: var(--gda-font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gda-ink-soft);
+  padding-top: 11px;
+  padding-bottom: 11px;
+}
+.gda-table td { font-size: 13.5px; color: var(--gda-ink); }
+.gda-table tbody tr { transition: background-color 0.12s ease; }
+.gda-table tbody tr:hover { background: #F6F9F4; }
+.gda-table .q-table__bottom { border-top: 1px solid var(--gda-hairline); font-size: 12.5px; color: var(--gda-ink-soft); }
+.gda-table .q-table__grid-content { padding: 4px 0; }
+.gda-cell-main { font-weight: 600; }
+.gda-cell-sub { display: block; font-size: 12px; color: var(--gda-ink-soft); font-weight: 400; }
+
+.gda-rcard {
+  background: var(--gda-card);
+  border: 1px solid var(--gda-hairline);
+  border-radius: 12px;
+  padding: 14px 16px;
+  height: 100%;
+}
+.gda-rcard-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.gda-rcard-title { font-weight: 700; font-size: 14.5px; color: var(--gda-ink); min-width: 0; }
+.gda-rcard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  margin: 0;
+}
+.gda-rcard-grid > div { min-width: 0; }
+.gda-rcard-grid > div.is-wide { grid-column: 1 / -1; }
+.gda-rcard-grid dt { margin-bottom: 2px; }
+.gda-rcard-grid dd { margin: 0; font-size: 13.5px; color: var(--gda-ink); word-break: break-word; }
+.gda-rcard-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--gda-hairline);
+}
+
+@media (max-width: 1023px) {
+  .gda-page-shell { padding: 20px 16px 36px; }
+  .gda-page-title { font-size: 22px; }
+  .gda-page-icon { width: 40px; height: 40px; }
+  .gda-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gda-summary-item:nth-child(2) { border-right: 0; }
+  .gda-summary-item:nth-child(-n+2) { border-bottom: 1px solid var(--gda-hairline); }
+  .gda-grid { grid-template-columns: 1fr; }
+  .gda-panel-head { padding: 12px 16px; }
+  .gda-panel-body { padding: 16px; }
+  .gda-toolbar .gda-search { width: 100%; }
+}
+
+/* Tarjetas móviles: sin contenedor propio para no anidar tarjetas dentro de tarjetas */
+.gda-panel:has(> .gda-table .q-table__grid-content),
+.gda-panel:has(> div > .gda-table .q-table__grid-content) {
+  background: transparent;
+  border: 0;
+  overflow: visible;
+}
+.gda-panel-head ~ .gda-table .gda-rcard {
+  border: 0;
+  border-top: 1px solid var(--gda-hairline);
+  border-radius: 0;
+  background: transparent;
+  padding-inline: 16px;
+}
+.gda-panel-head ~ .gda-table .q-table__grid-item { padding: 0; }
+.gda-panel-head ~ .gda-table .q-table__grid-content { margin: 0; }

@@ -62,11 +62,12 @@ const chartOptions = {
   maintainAspectRatio: false,
   interaction: { mode: 'index', intersect: false },
   scales: {
-    humidity: { type: 'linear', position: 'left', min: 0, max: 100, title: { display: true, text: '%' } },
+    x: { ticks: { maxTicksLimit: 8, maxRotation: 0, color: '#5A6B5E', font: { family: 'IBM Plex Mono', size: 11 } }, grid: { display: false } },
+    humidity: { type: 'linear', position: 'left', min: 0, max: 100, ticks: { color: '#5A6B5E', font: { family: 'IBM Plex Mono', size: 11 } }, grid: { color: '#E6ECE3' }, title: { display: true, text: '%', color: '#5A6B5E' } },
     // display:'auto' oculta el eje derecho cuando no hay serie de temperatura
-    temp: { type: 'linear', position: 'right', display: 'auto', grid: { drawOnChartArea: false }, title: { display: true, text: '°C' } }
+    temp: { type: 'linear', position: 'right', display: 'auto', ticks: { color: '#5A6B5E', font: { family: 'IBM Plex Mono', size: 11 } }, grid: { drawOnChartArea: false }, title: { display: true, text: '°C', color: '#5A6B5E' } }
   },
-  plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+  plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true, pointStyle: 'rectRounded', color: '#1F2A22', font: { family: 'Albert Sans', size: 12.5 } } } }
 };
 </script>
 

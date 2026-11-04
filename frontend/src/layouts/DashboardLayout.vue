@@ -2,30 +2,35 @@
   <div class="gda-shell">
     <aside class="gda-sidebar" v-if="!$q.screen.lt.md">
       <div class="gda-brand">
-        <BrandMark :size="26" class="gda-brand-mark" />
+        <div class="gda-brand-tile"><BrandMark :size="24" /></div>
         <div>
           <span class="gda-brand-name">GDA</span>
           <span class="gda-brand-sub">Gemelo Digital Agrícola</span>
         </div>
       </div>
-      <nav class="gda-nav">
-        <router-link
-          v-for="item in navItems" :key="item.path"
-          :to="item.path"
-          class="gda-nav-link"
-          :class="{ active: isActive(item.path) }"
-        >
-          <q-icon :name="item.icon" size="19px" />
-          {{ item.label }}
-        </router-link>
+
+      <nav class="gda-nav" aria-label="Secciones">
+        <div v-for="group in navGroups" :key="group.label" class="gda-nav-group">
+          <span class="gda-nav-group-label">{{ group.label }}</span>
+          <router-link
+            v-for="item in group.items" :key="item.path"
+            :to="item.path"
+            class="gda-nav-link"
+            :class="{ active: isActive(item.path) }"
+          >
+            <q-icon :name="item.icon" size="20px" />
+            <span>{{ item.label }}</span>
+          </router-link>
+        </div>
       </nav>
+
       <div class="gda-sidebar-footer">
         <div class="gda-avatar">{{ initials }}</div>
         <div class="gda-user">
           <div class="gda-user-name">{{ auth.user?.fullName }}</div>
           <div class="gda-user-role">{{ roleLabel }}</div>
         </div>
-        <q-btn flat dense round icon="logout" class="gda-logout" @click="logout">
+        <q-btn flat dense round icon="logout" class="gda-logout" aria-label="Cerrar sesión" @click="logout">
           <q-tooltip>Cerrar sesión</q-tooltip>
         </q-btn>
       </div>
@@ -33,23 +38,23 @@
 
     <div class="gda-main">
       <header v-if="$q.screen.lt.md" class="gda-mobile-header">
-        <div class="gda-brand gda-brand--mobile">
-          <BrandMark :size="22" class="gda-brand-mark" />
-          <span class="gda-brand-name">GDA</span>
+        <div class="gda-brand-mobile">
+          <div class="gda-brand-tile gda-brand-tile--sm"><BrandMark :size="18" /></div>
+          <span class="gda-mobile-title">{{ currentTitle }}</span>
         </div>
-        <q-btn flat dense round icon="logout" class="gda-logout" @click="logout" />
+        <q-btn flat dense round icon="logout" class="gda-logout" aria-label="Cerrar sesión" @click="logout" />
       </header>
 
       <main class="gda-content"><router-view /></main>
 
-      <nav v-if="$q.screen.lt.md" class="gda-mobile-tabs">
+      <nav v-if="$q.screen.lt.md" class="gda-mobile-tabs" aria-label="Secciones">
         <router-link
           v-for="item in navItems" :key="item.path"
           :to="item.path"
           class="gda-tab"
           :class="{ active: isActive(item.path) }"
         >
-          <q-icon :name="item.icon" size="22px" />
+          <span class="gda-tab-icon"><q-icon :name="item.icon" size="22px" /></span>
           <span>{{ item.label }}</span>
         </router-link>
       </nav>
@@ -79,23 +84,32 @@ const initials = computed(() =>
     .toUpperCase()
 );
 
-const navItems = computed(() => {
-  const items = [
+const navGroups = computed(() => {
+  const operacion = [
     { path: '/dashboard', label: 'Dashboard', icon: 'space_dashboard' },
     { path: '/dashboard/pots', label: 'Zonas', icon: 'grass' },
-    { path: '/dashboard/alerts', label: 'Alertas', icon: 'notifications' },
-    { path: '/dashboard/settings', label: 'Ajustes', icon: 'settings' }
+    { path: '/dashboard/alerts', label: 'Alertas', icon: 'notifications' }
   ];
+  const cuenta = [{ path: '/dashboard/settings', label: 'Ajustes', icon: 'tune' }];
   if (auth.user?.role === 'admin') {
-    items.splice(3, 0, { path: '/dashboard/users', label: 'Usuarios', icon: 'group' });
+    cuenta.unshift({ path: '/dashboard/users', label: 'Usuarios', icon: 'group' });
   }
-  return items;
+  return [
+    { label: 'Operación', items: operacion },
+    { label: 'Administración', items: cuenta }
+  ];
 });
+const navItems = computed(() => navGroups.value.flatMap(g => g.items));
 
 function isActive(path) {
   if (path === '/dashboard') return route.path === '/dashboard';
   return route.path.startsWith(path);
 }
+
+const currentTitle = computed(() => {
+  const item = [...navItems.value].reverse().find(i => isActive(i.path));
+  return item?.label || 'GDA';
+});
 
 function logout() {
   auth.logout();
@@ -106,138 +120,147 @@ function logout() {
 <style scoped>
 .gda-shell { display: flex; min-height: 100vh; }
 
-/* Sidebar: sombra de follaje — panel verde pino con acentos hoja-clara */
+/* Sidebar: panel verde pino de instrumento, con acentos hoja-clara */
 .gda-sidebar {
-  width: 232px;
+  width: 248px;
   flex-shrink: 0;
-  background: linear-gradient(180deg, var(--gda-pine) 0%, var(--gda-pine-deep) 100%);
+  background: var(--gda-pine-deep);
   color: #E9F1E7;
   display: flex;
   flex-direction: column;
   position: sticky;
   top: 0;
   height: 100vh;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.gda-brand {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 22px 20px 18px;
+.gda-brand { display: flex; align-items: center; gap: 12px; padding: 22px 20px 20px; }
+.gda-brand-tile {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: rgba(127, 201, 143, 0.14);
+  color: var(--gda-leaf-bright);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
 }
-.gda-brand-mark { color: var(--gda-leaf-bright); flex-shrink: 0; }
+.gda-brand-tile--sm { width: 32px; height: 32px; border-radius: 9px; }
 .gda-brand-name {
   display: block;
   font-family: var(--gda-font-display);
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   line-height: 1.1;
 }
-.gda-brand-sub {
-  display: block;
-  font-size: 10px;
-  letter-spacing: 0.05em;
-  color: rgba(233, 241, 231, 0.55);
-}
+.gda-brand-sub { display: block; font-size: 10.5px; letter-spacing: 0.04em; color: rgba(233, 241, 231, 0.55); margin-top: 2px; }
 
-.gda-nav {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 12px;
+.gda-nav { flex: 1; display: flex; flex-direction: column; gap: 20px; padding: 8px 14px; overflow-y: auto; }
+.gda-nav-group { display: flex; flex-direction: column; gap: 2px; }
+.gda-nav-group-label {
+  font-family: var(--gda-font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(233, 241, 231, 0.42);
+  padding: 0 12px 8px;
 }
 .gda-nav-link {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 12px;
   padding: 10px 12px;
-  border-radius: 9px;
-  border-left: 3px solid transparent;
+  border-radius: 10px;
   color: rgba(233, 241, 231, 0.72);
   text-decoration: none;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 500;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 .gda-nav-link:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
-.gda-nav-link.active {
-  background: rgba(127, 201, 143, 0.14);
-  border-left-color: var(--gda-leaf-bright);
-  color: #fff;
-  font-weight: 600;
-}
+.gda-nav-link.active { background: rgba(127, 201, 143, 0.15); color: #fff; font-weight: 600; }
 .gda-nav-link.active .q-icon { color: var(--gda-leaf-bright); }
+/* LED de la sección activa */
+.gda-nav-link.active::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gda-leaf-bright);
+  box-shadow: 0 0 8px rgba(127, 201, 143, 0.7);
+}
 
 .gda-sidebar-footer {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  margin: 10px 14px 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
 }
 .gda-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   background: var(--gda-leaf);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 700;
   flex-shrink: 0;
 }
 .gda-user { flex: 1; min-width: 0; }
-.gda-user-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #fff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.gda-user-role { font-size: 11px; color: rgba(233, 241, 231, 0.55); }
-.gda-logout { color: rgba(233, 241, 231, 0.6); }
+.gda-user-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gda-user-role { font-size: 11.5px; color: rgba(233, 241, 231, 0.6); }
+.gda-logout { color: rgba(233, 241, 231, 0.65); }
 
 .gda-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.gda-content { flex: 1; padding-bottom: 72px; }
+.gda-content { flex: 1; }
 
 .gda-mobile-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
-  background: var(--gda-pine);
+  padding: 10px 14px;
+  background: var(--gda-pine-deep);
   color: #E9F1E7;
   position: sticky;
   top: 0;
   z-index: 10;
 }
-.gda-brand--mobile { padding: 0; gap: 8px; }
+.gda-brand-mobile { display: flex; align-items: center; gap: 10px; }
+.gda-mobile-title { font-family: var(--gda-font-display); font-size: 17px; font-weight: 700; }
 
 .gda-mobile-tabs {
-  position: fixed;
+  position: sticky;
   bottom: 0;
-  left: 0;
-  right: 0;
   display: flex;
   background: var(--gda-card);
   border-top: 1px solid var(--gda-hairline);
   z-index: 10;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 .gda-tab {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   padding: 8px 4px 9px;
-  font-size: 10.5px;
+  font-size: 11px;
+  font-weight: 500;
   color: var(--gda-ink-soft);
   text-decoration: none;
 }
+.gda-tab-icon { width: 54px; height: 28px; border-radius: 14px; display: grid; place-items: center; transition: background-color 0.15s ease; }
 .gda-tab.active { color: var(--gda-leaf); font-weight: 700; }
+.gda-tab.active .gda-tab-icon { background: var(--gda-leaf-tint); }
 </style>

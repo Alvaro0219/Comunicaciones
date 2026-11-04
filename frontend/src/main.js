@@ -7,6 +7,7 @@ import 'quasar/src/css/index.sass';
 import '@quasar/extras/material-icons/material-icons.css';
 import './styles/app.css';
 import './styles/dashboard-unified.css';
+import './styles/app-overrides.css';
 
 const app = createApp(App);
 app.use(Quasar, { plugins: { Notify } });

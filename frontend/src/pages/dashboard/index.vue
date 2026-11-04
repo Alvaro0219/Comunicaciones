@@ -1,17 +1,15 @@
 <template>
   <div class="gda-page-shell">
-    <div class="gda-page-header">
-      <div>
-        <h1 class="gda-page-title">Dashboard</h1>
-        <p class="gda-page-subtitle">
-          Estado en vivo de tus zonas
-          <q-badge :color="connected ? 'positive' : 'grey-5'" class="q-ml-sm">
-            {{ connected ? 'en vivo' : 'reconectando…' }}
-          </q-badge>
-        </p>
-      </div>
-      <q-btn flat color="primary" icon="refresh" label="Actualizar" @click="reload" />
-    </div>
+    <PageHeader
+      title="Dashboard" icon="space_dashboard"
+      subtitle="Estado en vivo de tus zonas de riego"
+    >
+      <StatusChip
+        :tone="connected ? 'ok' : 'neutral'"
+        :label="connected ? 'En vivo' : 'Reconectando…'"
+      />
+      <q-btn flat no-caps color="primary" icon="refresh" label="Actualizar" @click="reload" />
+    </PageHeader>
 
     <LoadingState
       :loading="loading"
@@ -21,52 +19,80 @@
     >
       <div class="gda-summary" role="list" aria-label="Resumen de zonas">
         <div class="gda-summary-item" role="listitem">
-          <span class="gda-summary-value gda-summary-value--ok">{{ summary.ok }}</span>
-          <span class="gda-metric-label">En rango</span>
+          <span class="gda-summary-led gda-summary-led--ok" />
+          <div class="gda-summary-text">
+            <span class="gda-summary-value gda-summary-value--ok">{{ summary.ok }}</span>
+            <span class="gda-label">En rango</span>
+          </div>
         </div>
         <div class="gda-summary-item" role="listitem">
-          <span class="gda-summary-value gda-summary-value--attention">{{ summary.attention }}</span>
-          <span class="gda-metric-label">Requieren atención</span>
+          <span class="gda-summary-led gda-summary-led--attention" />
+          <div class="gda-summary-text">
+            <span class="gda-summary-value gda-summary-value--attention">{{ summary.attention }}</span>
+            <span class="gda-label">Requieren atención</span>
+          </div>
         </div>
         <div class="gda-summary-item" role="listitem">
-          <span class="gda-summary-value">{{ summary.offline }}</span>
-          <span class="gda-metric-label">Sin conexión</span>
+          <span class="gda-summary-led" />
+          <div class="gda-summary-text">
+            <span class="gda-summary-value">{{ summary.offline }}</span>
+            <span class="gda-label">Sin conexión</span>
+          </div>
         </div>
         <div class="gda-summary-item" role="listitem">
-          <span class="gda-summary-value">{{ summary.plants }}</span>
-          <span class="gda-metric-label">Macetas en total</span>
+          <span class="gda-summary-led gda-summary-led--water" />
+          <div class="gda-summary-text">
+            <span class="gda-summary-value">{{ summary.plants }}</span>
+            <span class="gda-label">Macetas en total</span>
+          </div>
         </div>
       </div>
-      <div class="gda-grid">
+
+      <div class="gda-toolbar">
+        <SegmentedControl
+          v-model="filter" label="Filtrar zonas"
+          :options="[
+            { label: 'Todas', value: 'all', count: pots.length },
+            { label: 'Atención', value: 'attention', count: summary.attention },
+            { label: 'Sin conexión', value: 'offline', count: summary.offline }
+          ]"
+        />
+        <q-input v-model="search" dense outlined clearable placeholder="Buscar zona o especie" class="gda-search">
+          <template #prepend><q-icon name="search" /></template>
+        </q-input>
+      </div>
+
+      <div v-if="visible.length" class="gda-grid">
         <PotCard
-          v-for="pot in pots" :key="pot._id"
+          v-for="pot in visible" :key="pot._id"
           :pot="pot"
           :can-operate="auth.canOperate"
           @open="goToDetail"
           @irrigate="askIrrigate"
         />
       </div>
+      <div v-else class="app-empty-state">
+        <q-icon name="filter_alt_off" size="40px" color="grey-5" />
+        <span>Ninguna zona coincide con el filtro.</span>
+      </div>
     </LoadingState>
 
-    <!-- Diálogo de riego manual -->
-    <q-dialog v-model="showIrrigate">
-      <q-card style="width: 360px">
-        <q-card-section>
-          <div class="text-h6">Riego manual</div>
-          <div class="text-caption text-grey-7">{{ irrigateTarget?.name }}</div>
-        </q-card-section>
-        <q-card-section>
-          <q-input
-            v-model.number="irrigateDuration" type="number" dense outlined
-            label="Duración (segundos)" :min="1" :max="600"
-          />
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancelar" v-close-popup />
-          <q-btn color="info" icon="water_drop" label="Regar" :loading="irrigating" @click="doIrrigate" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+    <!-- Riego manual -->
+    <AppDialog
+      v-model="showIrrigate" title="Riego manual" :subtitle="irrigateTarget?.name"
+      icon="water_drop" tone="water" width="420px"
+      submit-label="Regar ahora" :loading="irrigating" @submit="doIrrigate"
+    >
+      <section class="gda-form-section">
+        <q-input
+          v-model.number="irrigateDuration" type="number" outlined
+          label="Duración del riego" suffix="seg" :min="1" :max="600"
+          hint="El nodo nunca riega más de 120 segundos por orden"
+        >
+          <template #prepend><q-icon name="timer" /></template>
+        </q-input>
+      </section>
+    </AppDialog>
   </div>
 </template>
 
@@ -77,34 +103,53 @@ import { useQuasar } from 'quasar';
 import { useAuthStore } from '../../stores/auth.js';
 import { fetchPots, irrigatePot } from '../../services/api.js';
 import { useRealtimeStream } from '../../composables/useRealtimeStream.js';
+import { potState, needsAttention } from '../../utils/potState.js';
 import LoadingState from '../../components/LoadingState.vue';
 import PotCard from '../../components/PotCard.vue';
+import PageHeader from '../../components/PageHeader.vue';
+import StatusChip from '../../components/StatusChip.vue';
+import SegmentedControl from '../../components/SegmentedControl.vue';
+import AppDialog from '../../components/AppDialog.vue';
 
 const $q = useQuasar();
 const router = useRouter();
 const auth = useAuthStore();
 
 const pots = ref([]);
+const loading = ref(false);
+const filter = ref('all');
+const search = ref('');
+
+const showIrrigate = ref(false);
+const irrigateTarget = ref(null);
+const irrigateDuration = ref(5);
+const irrigating = ref(false);
 
 // Una zona "requiere atención" si tiene alertas activas o la humedad está fuera de sus límites
 const summary = computed(() => {
   const s = { ok: 0, attention: 0, offline: 0, plants: 0 };
   for (const p of pots.value) {
     s.plants += p.plants?.length || 0;
-    if (!p.online) { s.offline++; continue; }
-    const soil = p.lastReading?.soilMoisture;
-    const out = soil != null && (soil < p.minMoisture || soil > p.maxMoisture);
-    if (p.activeAlerts || out) s.attention++;
+    if (!p.online) s.offline++;
+    else if (needsAttention(p)) s.attention++;
     else s.ok++;
   }
   return s;
 });
-const loading = ref(false);
 
-const showIrrigate = ref(false);
-const irrigateTarget = ref(null);
-const irrigateDuration = ref(5);
-const irrigating = ref(false);
+// Primero las zonas reales, después las que necesitan atención; al final las sin conexión
+const ORDER = { dry: 0, wet: 1, watering: 2, ok: 3, wait: 4, offline: 5 };
+const visible = computed(() => {
+  const q = (search.value || '').trim().toLowerCase();
+  return pots.value
+    .filter((p) => {
+      if (filter.value === 'attention' && !needsAttention(p)) return false;
+      if (filter.value === 'offline' && p.online) return false;
+      if (!q) return true;
+      return `${p.name} ${p.species || ''}`.toLowerCase().includes(q);
+    })
+    .sort((a, b) => (a.isDemo ? 1 : 0) - (b.isDemo ? 1 : 0) || (ORDER[potState(a).key] ?? 9) - (ORDER[potState(b).key] ?? 9));
+});
 
 async function reload() {
   loading.value = true;
