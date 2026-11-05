@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GDA — Plan de las presentaciones</title>
+<meta name="description" content="Qué mostrar, qué decir y qué saber en las dos presentaciones de GDA: la técnica para la clase y la de puertas abiertas.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Albert+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --mist: #EFF3EC; --card: #FFFFFF; --ink: #1F2A22; --soft: #55665A; --hair: #D6E0D2;
+  --pine: #24382B; --deep: #1B2B21; --leaf: #3E7C4F; --leaf2: #7FC98F; --tint: #E4EFE3;
+  --water: #2E7DA6; --wtint: #E2EFF6; --clay: #B0562F; --ctint: #F6E9E1; --sun: #C9822B; --stint: #F7ECD9;
+  --display: 'Bricolage Grotesque', 'Albert Sans', system-ui, sans-serif;
+  --body: 'Albert Sans', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; scrollbar-color: #9FB3A4 var(--mist); }
+body { margin: 0; font: 1.0625rem/1.65 var(--body); color: var(--ink); background: var(--mist); -webkit-font-smoothing: antialiased; }
+::selection { background: var(--leaf2); color: var(--deep); }
+:focus-visible { outline: 2px solid var(--water); outline-offset: 3px; border-radius: 6px; }
+h1, h2, h3, h4 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: -0.015em; }
+h2 { font-size: clamp(1.9rem, 3vw, 2.5rem); font-weight: 800; line-height: 1.1; }
+h3 { font-size: 1.3rem; font-weight: 800; margin-top: 40px; }
+p { margin: 12px 0 0; max-width: 74ch; }
+a { color: var(--leaf); text-underline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: #E6ECE3; padding: 1px 6px; border-radius: 5px; color: var(--deep); }
+ul, ol { margin: 10px 0 0; padding-left: 22px; } li { margin: 6px 0; }
+.ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+.layout { display: grid; grid-template-columns: 270px minmax(0, 1fr); min-height: 100vh; }
+.toc { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--deep); color: #E9F1E7; padding: 26px 18px; display: flex; flex-direction: column; gap: 18px; }
+.toc-brand { display: flex; align-items: center; gap: 12px; padding: 0 8px; }
+.toc-brand b { font-family: var(--display); font-size: 1.15rem; letter-spacing: 0.04em; display: block; line-height: 1.1; }
+.toc-brand small { font-size: 0.72rem; color: rgba(233, 241, 231, 0.6); }
+.toc-tile { width: 40px; height: 40px; border-radius: 11px; background: rgba(127, 201, 143, 0.14); color: var(--leaf2); display: grid; place-items: center; }
+.toc nav { display: flex; flex-direction: column; gap: 2px; }
+.toc a { display: block; text-decoration: none; color: rgba(233, 241, 231, 0.72); padding: 8px 12px; border-radius: 9px; font-size: 0.93rem; font-weight: 500; }
+.toc a:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+.toc a.active { background: rgba(127, 201, 143, 0.16); color: #fff; font-weight: 600; }
+.toc-hint { margin-top: auto; font-size: 0.78rem; color: rgba(233, 241, 231, 0.55); padding: 0 8px; }
+main { min-width: 0; }
+.wrap { width: min(940px, 100% - 56px); margin-inline: auto; }
+.hero { background: var(--pine); color: #E9F1E7; padding: clamp(44px, 6vw, 80px) 0; }
+.hero h1 { font-size: clamp(2.2rem, 4.6vw, 3.6rem); font-weight: 800; line-height: 1.04; max-width: 20ch; color: #fff; }
+.hero p { color: #C8D6CB; font-size: 1.15rem; margin-top: 18px; }
+section.chapter { padding-block: clamp(44px, 6vw, 72px); border-top: 1px solid var(--hair); }
+.lead { color: var(--soft); font-size: 1.12rem; margin-top: 14px; }
+
+.tbl-wrap { overflow-x: auto; margin-top: 18px; border: 1px solid var(--hair); border-radius: 14px; background: var(--card); }
+table { width: 100%; border-collapse: collapse; min-width: 560px; }
+th { text-align: left; font: 600 0.74rem var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--soft); padding: 12px 16px; background: #F6F9F4; border-bottom: 1px solid var(--hair); }
+td { padding: 12px 16px; border-bottom: 1px solid var(--hair); vertical-align: top; font-size: 0.97rem; }
+tr:last-child td { border-bottom: 0; } td:first-child { font-weight: 600; }
+.blank { display: inline-block; min-width: 120px; border-bottom: 1.5px dashed #9DB0A0; height: 1.1em; vertical-align: bottom; }
+
+.note { margin-top: 22px; padding: 16px 20px; border-radius: 12px; background: var(--tint); color: #24402B; }
+.note.warn { background: var(--stint); color: #5E4410; } .note.crit { background: var(--ctint); color: #6B2F16; }
+.note b { display: block; font-family: var(--display); margin-bottom: 4px; } .note p, .note ul { margin: 0; max-width: none; }
+
+/* Tarjetas de diapositiva */
+.slides { margin-top: 24px; display: flex; flex-direction: column; gap: 14px; }
+.slide { background: var(--card); border: 1px solid var(--hair); border-radius: 14px; overflow: hidden; }
+.slide summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 44px 1fr auto 24px; gap: 14px; align-items: center; padding: 16px 20px; }
+.slide summary::-webkit-details-marker { display: none; }
+.slide .num { width: 36px; height: 36px; border-radius: 50%; background: var(--pine); color: #fff; font: 600 0.95rem var(--mono); display: grid; place-items: center; }
+.slide summary b { font-family: var(--display); font-size: 1.15rem; letter-spacing: -0.01em; display: block; }
+.slide summary small { color: var(--soft); font-size: 0.9rem; display: block; margin-top: 1px; }
+.slide .time { font: 600 0.82rem var(--mono); color: var(--leaf); background: var(--tint); padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.slide .chev { color: var(--soft); transition: transform .2s; } .slide[open] .chev { transform: rotate(90deg); }
+.slide summary:hover b { color: var(--leaf); }
+.sbody { padding: 4px 20px 22px; border-top: 1px solid var(--hair); display: grid; gap: 0; }
+.row { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 6px 22px; padding: 14px 0; border-bottom: 1px solid var(--hair); }
+.row:last-child { border-bottom: 0; }
+.row > .k { font: 600 0.74rem var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--soft); padding-top: 4px; }
+.row .v > p:first-child, .row .v > ul:first-child { margin-top: 0; }
+.row .v ul { padding-left: 18px; }
+.qa { margin: 8px 0 0; } .qa b { display: block; } .qa span { color: var(--soft); }
+.say { background: var(--tint); border-radius: 10px; padding: 10px 14px; margin-top: 8px; font-style: italic; color: #24402B; }
+.who { color: var(--soft); font-size: 0.93rem; }
+
+/* Pestañas de método de lectura */
+.tabs { display: inline-flex; padding: 3px; background: #E3EADF; border-radius: 10px; gap: 2px; margin-top: 18px; flex-wrap: wrap; }
+.tabs button { font: 600 0.9rem var(--body); color: var(--soft); background: transparent; border: 0; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+.tabs button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(31, 42, 34, 0.16); }
+.filters { margin-top: 16px; } .filters input { width: 100%; font: 500 0.95rem var(--body); padding: 10px 12px; border-radius: 9px; border: 1px solid var(--hair); background: var(--card); color: var(--ink); }
+
+.checks { list-style: none; padding: 0; margin: 14px 0 0; border: 1px solid var(--hair); border-radius: 14px; background: var(--card); }
+.checks li { margin: 0; border-bottom: 1px solid var(--hair); }
+.checks li:last-child { border-bottom: 0; }
+.checks label { display: grid; grid-template-columns: 24px 1fr; gap: 12px; padding: 12px 16px; cursor: pointer; align-items: start; }
+.checks input { width: 18px; height: 18px; margin-top: 4px; accent-color: var(--leaf); }
+.checks input:checked + span { color: var(--soft); text-decoration: line-through; }
+
+footer { background: var(--deep); color: #A9BBAD; padding: 28px 0; font-size: 0.93rem; }
+.mob-nav { display: none; }
+@media (max-width: 1000px) {
+  .layout { grid-template-columns: 1fr; } .toc { display: none; }
+  .mob-nav { display: flex; position: sticky; top: 0; z-index: 20; gap: 4px; overflow-x: auto; background: var(--deep); padding: 10px 14px; scrollbar-width: none; }
+  .mob-nav a { color: rgba(233, 241, 231, 0.8); text-decoration: none; white-space: nowrap; padding: 7px 12px; border-radius: 8px; font-size: 0.9rem; font-weight: 500; }
+  .mob-nav a.active { background: rgba(127, 201, 143, 0.16); color: #fff; }
+  .wrap { width: calc(100% - 32px); }
+}
+@media (max-width: 700px) {
+  .slide summary { grid-template-columns: 40px 1fr 20px; } .slide .time { display: none; }
+  .row { grid-template-columns: 1fr; gap: 2px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+@media print { .toc, .mob-nav, .tabs, .filters { display: none !important; } .layout { display: block; } details > *:not(summary) { display: block !important; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-sprout" viewBox="0 0 24 24"><path d="M12 2.8C8.6 7.3 5.8 10.6 5.8 14.1a6.2 6.2 0 0 0 12.4 0C18.2 10.6 15.4 7.3 12 2.8Z"/><path d="M12 17.2v-4m0 0c0-2.1 1.6-3.1 3.2-3.1 0 2.1-1.3 3.1-3.2 3.1Zm0 0c0-2.1-1.6-3.1-3.2-3.1 0 2.1 1.3 3.1 3.2 3.1Z"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></symbol>
+</svg>
+
+<nav class="mob-nav" aria-label="Capítulos">
+  <a href="#base">Lo que hay que saber</a><a href="#relato">Relato común</a><a href="#tecnica">Técnica</a><a href="#abierta">Puertas abiertas</a><a href="#demo">Demo</a><a href="#glosario">Traducciones</a><a href="#actualizar">Actualizar</a><a href="#reparto">Reparto</a>
+</nav>
+
+<div class="layout">
+<aside class="toc" aria-label="Índice">
+  <div class="toc-brand"><div class="toc-tile"><svg class="ic" style="width:24px;height:24px"><use href="#i-sprout"/></svg></div><div><b>GDA</b><small>Plan de presentaciones</small></div></div>
+  <nav id="tocNav">
+    <a href="#base">1. Lo que todos debemos saber</a>
+    <a href="#relato">2. El relato común</a>
+    <a href="#tecnica">3. Presentación técnica</a>
+    <a href="#abierta">4. Puertas abiertas</a>
+    <a href="#demo">5. La demo</a>
+    <a href="#glosario">6. Traducciones y preguntas</a>
+    <a href="#actualizar">7. Qué actualizar antes</a>
+    <a href="#reparto">8. Reparto del equipo</a>
+  </nav>
+  <p class="toc-hint">Se apoya en los tres documentos del proyecto: Conexiones del Nodo 1, Conexión MQTT y Guía del código.</p>
+</aside>
+
+<main>
+<header class="hero"><div class="wrap">
+  <h1>Plan de las dos presentaciones</h1>
+  <p>Qué mostrar en cada una, qué decir, qué información extra conviene tener a mano y qué preguntas esperar. Sirve para que todos cuenten lo mismo y para repartir después quién aporta qué.</p>
+</div></header>
+
+<!-- ═══ 1 ═══ -->
+<section class="chapter" id="base"><div class="wrap">
+  <h2>1. Lo que todos debemos saber</h2>
+  <p class="lead">Aunque cada uno exponga una parte, cualquiera puede recibir una pregunta sobre otra. Esta es la base común, con los datos reales del proyecto.</p>
+
+  <h3>El proyecto en una frase y tres ejes</h3>
+  <p><b>GDA</b> es un sistema de riego automatizado para macetas y viveros: un nodo con sensores mide la planta, un servidor decide cuándo regar y un panel web lo muestra en tiempo real. Se explica con tres ejes, cada uno con su documento:</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Eje</th><th>Qué cubre</th><th>Documento</th></tr></thead>
+    <tbody>
+      <tr><td>1. Conexiones del nodo</td><td>El hardware: ESP32, sensores, relé, bomba, protoboard y problemas resueltos.</td><td>Conexiones Nodo 1 GDA</td></tr>
+      <tr><td>2. Comunicación con el broker</td><td>MQTT, HiveMQ, topics, mensajes, seguridad y despliegue.</td><td>GDA Conexión MQTT</td></tr>
+      <tr><td>3. El código</td><td>Backend, frontend, base de datos, API, tecnologías y defensa.</td><td>GDA Guía del código</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Ficha de datos reales</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Tema</th><th>Dato</th></tr></thead>
+    <tbody>
+      <tr><td>Principio de diseño</td><td>El nodo mide y ejecuta; el backend decide.</td></tr>
+      <tr><td>Placa</td><td>ESP32 DevKit de 38 pines (ESP-WROOM-32). Firmware <code>gda-nodo-v2.ino</code> v2.5.</td></tr>
+      <tr><td>Sensor de suelo</td><td>FC-28 con módulo comparador. Señal A0 → GPIO 34 (ADC1: sigue leyendo con WiFi). Alimentado a 3,3 V, nunca a 5 V.</td></tr>
+      <tr><td>Sensor de aire</td><td>AM2302: temperatura y humedad. DATA → GPIO 15 (pin de arranque: si la placa no carga, desconectar el cable o pasarlo al GPIO 4).</td></tr>
+      <tr><td>Relé y bomba</td><td>Relé HW-307 activo en bajo, IN → GPIO 27, alimentado desde el riel de 3,3 V. La bomba usa su propia caja de pilas por los bornes COM y NO del relé, y nunca se conecta al ESP32.</td></tr>
+      <tr><td>Calibración del suelo</td><td>Seco (horquilla al aire) = 4095; mojado (en agua) = 1925. El firmware promedia 10 lecturas y publica 0–100 %.</td></tr>
+      <tr><td>Frecuencia de datos</td><td>Telemetría cada 30 s (10 min es la previsión en producción). El aire se lee cada 5 s en segundo plano.</td></tr>
+      <tr><td>Protección de la bomba</td><td>Tope de 120 s por orden y apagado por tiempo medido en el propio nodo, aunque se caiga el WiFi. Relé apagado al arrancar y durante OTA.</td></tr>
+      <tr><td>Broker</td><td>HiveMQ Cloud, TLS en el puerto 8883. El nodo valida el certificado ISRG Root X1. Plan gratuito: 100 conexiones y 10 GB/mes (según el documento de conexión MQTT).</td></tr>
+      <tr><td>Topics</td><td><code>gda/prod/nodo1/telemetria</code>, <code>…/comando</code> y <code>…/evento</code>.</td></tr>
+      <tr><td>Backend</td><td>Node.js + Express en capas. Cliente MQTT, API REST, SSE y tareas programadas.</td></tr>
+      <tr><td>Reglas de decisión</td><td>Espera de 10 min entre riegos; lluvia mirada a 6 h; emergencia a 10 puntos bajo el mínimo; espera máxima por lluvia 6 h; fallo de sensor a los 15 min sin datos; pronóstico cada 3 h.</td></tr>
+      <tr><td>Base de datos</td><td>MongoDB Atlas, 7 colecciones. La zona (<code>Pot</code>) es el centro.</td></tr>
+      <tr><td>Frontend</td><td>Vue 3 + Quasar + Pinia. Tabla en escritorio, tarjetas en celular. Tiempo real por SSE.</td></tr>
+      <tr><td>Alertas</td><td>5 tipos: crítica, preventiva, exceso de humedad, calor extremo y fallo de sensor. En pantalla y por email.</td></tr>
+      <tr><td>Roles</td><td>Administrador, técnico y visualizador.</td></tr>
+      <tr><td>Pruebas</td><td>Simulador de nodo, <code>npm run e2e</code> (punta a punta) y <code>npm run test:alertas</code> (40 comprobaciones).</td></tr>
+      <tr><td>Zonas de ejemplo</td><td>Datos de demostración, rotulados, para mostrar varias zonas. Solo la zona del nodo real mide y riega de verdad.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Cuatro capas contra riegos accidentales</h3>
+  <p>Es de lo primero que preguntan sobre un sistema que enciende una bomba. Conviene saberlo de memoria:</p>
+  <ol>
+    <li><b>Nodo:</b> relé apagado al arrancar, duración acotada a 120 s, apagado local por tiempo y sesión limpia (no ejecuta órdenes viejas).</li>
+    <li><b>Backend:</b> no solapa órdenes, respeta la espera entre riegos y expira las que no se confirman.</li>
+    <li><b>MODO_ESCRITURA:</b> en <code>false</code> el backend decide y registra pero no publica. Solo el backend desplegado corre en <code>true</code>.</li>
+    <li><b>Permisos del broker:</b> las cuentas personales son de solo lectura; HiveMQ rechaza cualquier publicación a <code>/comando</code>.</li>
+  </ol>
+
+  <h3>Problemas reales que resolvimos (material para contar)</h3>
+  <p>Son lo mejor para mostrar que hubo trabajo de ingeniería y no solo armado. Cada fila es una anécdota de dos frases.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Síntoma</th><th>Causa</th><th>Solución</th></tr></thead>
+    <tbody>
+      <tr><td>La bomba arrancaba apenas se daba corriente</td><td>El <code>setup()</code> llamaba a <code>escribirRele(true)</code>, que la encendía.</td><td>Se cambió a <code>escribirRele(false)</code>.</td></tr>
+      <tr><td>El LED verde del relé no se apagaba con ningún código</td><td>Relé activo en bajo alimentado a 5 V: los 3,3 V del ESP32 no alcanzan para apagarlo.</td><td>Alimentarlo desde el riel de 3,3 V.</td></tr>
+      <tr><td>El GPIO 26 no apagaba el relé</td><td>Fila o pin con problemas en el protoboard.</td><td>Se movió IN al GPIO 27.</td></tr>
+      <tr><td>La bomba andaba con el relé en reposo</td><td>Cable de la bomba en el borne NC (normalmente cerrado).</td><td>Pasarlo al borne NO.</td></tr>
+      <tr><td>Humedad siempre en 0 %</td><td>Calibración de ejemplo del firmware.</td><td>Calibración real: 4095 en aire y 1925 en agua.</td></tr>
+      <tr><td>Error «Wrong boot mode» al cargar</td><td>La placa no entra sola en modo descarga.</td><td>Mantener BOOT al subir el firmware.</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<!-- ═══ 2 ═══ -->
+<section class="chapter" id="relato"><div class="wrap">
+  <h2>2. El relato común</h2>
+  <p class="lead">Problema, propósito, idea y solución aparecen en las dos presentaciones. Cambia el lenguaje, no el contenido.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Pieza</th><th>En la técnica</th><th>En puertas abiertas</th></tr></thead>
+    <tbody>
+      <tr><td>Problema</td><td>El riego manual se hace a ojo: se riega de más, de menos o a destiempo, y depende de que alguien esté presente. No hay registro ni forma de anticiparse a la lluvia.</td><td>«¿Cuánta agua necesita tu planta? ¿Y si te vas de viaje?» Regar a ojo es difícil: o se seca o se ahoga.</td></tr>
+      <tr><td>Propósito</td><td>Automatizar el riego con datos reales (humedad, temperatura, pronóstico) y dejar todo registrado.</td><td>Que las plantas reciban el agua justa sin que nadie tenga que estar mirándolas.</td></tr>
+      <tr><td>Idea</td><td>Un gemelo digital de cada zona: su estado real, su historial y sus reglas representados en un sistema. Empezó pensado para un campo y se acotó a macetas y viveros.</td><td>Una «copia digital» de la maceta que sabe cómo está y qué necesita.</td></tr>
+      <tr><td>Solución</td><td>Nodo ESP32 con sensores → broker MQTT → backend que decide → base de datos y panel en tiempo real.</td><td>Un sensor mide, un «cerebro» decide y una bomba riega. Todo se ve desde el celular.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note"><b>Por qué se acotó el alcance (tener la respuesta lista)</b><p>Un campo exige red de largo alcance, energía solar, bombas o aspersores grandes y muchos nodos. Una zona de macetas permite demostrar el ciclo completo con hardware real y validarlo. El sistema está pensado para crecer: cada nodo nuevo se identifica por su <code>nodeId</code> sin cambiar la lógica.</p></div>
+  <div class="note warn"><b>Cuidado con las cifras</b><p>No medimos cuánta agua se ahorra ni calculamos el costo final. No hay que afirmar porcentajes de ahorro. Si preguntan, lo honesto es decir qué hace el sistema para no desperdiciar (no riega si va a llover, si el suelo ya está húmedo, ni dos veces seguidas).</p></div>
+</div></section>
+
+<!-- ═══ 3 ═══ -->
+<section class="chapter" id="tecnica"><div class="wrap">
+  <h2>3. Presentación técnica (clase)</h2>
+  <p class="lead">Para el profesor y los compañeros. Ocho diapositivas, unos 12 minutos con la demo. Busca mostrar que entienden y pueden defender lo que hicieron.</p>
+  <div class="slides" id="slidesTec"></div>
+  <div class="note"><b>Si falta tiempo</b><p>Se pueden juntar la 4 con la 3 (nodo dentro del diagrama) y la 8 con la 7. No conviene sacar la diapositiva 3 ni la 5: son las que más preguntas generan. Si la demo es riesgosa, usar un video grabado antes.</p></div>
+</div></section>
+
+<!-- ═══ 4 ═══ -->
+<section class="chapter" id="abierta"><div class="wrap">
+  <h2>4. Presentación de puertas abiertas</h2>
+  <p class="lead">Para público general. Pocas palabras técnicas, mucho para ver y tocar. La demo es el centro. Trece diapositivas cortas, o una versión de stand de 3 minutos.</p>
+  <div class="slides" id="slidesPub"></div>
+
+  <h3>Versión de stand: 3 minutos</h3>
+  <p>En una jornada de puertas abiertas el público pasa por ratos. Conviene tener un guion corto que se repita:</p>
+  <ol>
+    <li><b>Gancho (20 s):</b> «¿Cuánta agua necesita esta planta? Nosotros hicimos un sistema que lo sabe.»</li>
+    <li><b>Qué es (40 s):</b> señalar el sensor en la tierra, la bomba y el panel: «Mide, decide y riega».</li>
+    <li><b>Demo (80 s):</b> el visitante toca «Regar ahora» en el celular o la pantalla; se ve la bomba y la tarjeta que cambia a «Regando».</li>
+    <li><b>Para qué sirve (30 s):</b> casa, huerta y viveros con muchas plantas.</li>
+    <li><b>Cierre (10 s):</b> «¿Querés ver cómo avisa cuando algo anda mal?» y mostrar una alerta.</li>
+  </ol>
+  <div class="note"><b>Para que el stand funcione</b><p>Un integrante conversa y otro vigila el sistema (WiFi, agua del tanque, pilas). Tener una pantalla con el panel a la vista y una hoja con la imagen simple de los tres pasos.</p></div>
+</div></section>
+
+<!-- ═══ 5 ═══ -->
+<section class="chapter" id="demo"><div class="wrap">
+  <h2>5. La demo</h2>
+  <p class="lead">Es el momento más importante y el más riesgoso. Se ensaya completa, con un plan B.</p>
+
+  <h3>Lista de preparación</h3>
+  <p>Tildá lo que ya está listo (se guarda solo mientras tengas la página abierta).</p>
+  <ul class="checks" id="checksDemo"></ul>
+
+  <h3>Guion para la clase (técnica, 2 minutos)</h3>
+  <ol>
+    <li>Mostrar el panel: la zona del nodo real y las zonas de ejemplo (rotuladas).</li>
+    <li>Mostrar el broker (MQTT Explorer) con la telemetría llegando al topic <code>…/telemetria</code>.</li>
+    <li>Tocar «Regar ahora» y mostrar en el broker el mensaje en <code>…/comando</code>, la bomba funcionando y el evento en <code>…/evento</code>.</li>
+    <li>Volver al panel: «Regando…», el riego confirmado y el historial con origen «manual».</li>
+    <li>Si hay margen: mostrar una alerta (por ejemplo, sacando la horquilla de la tierra, el suelo marca seco) y cómo el sistema decide.</li>
+  </ol>
+
+  <h3>Guion para puertas abiertas (simple)</h3>
+  <ol>
+    <li>«Esta es la planta, este es el sensor que mide la humedad y esta es la bomba.»</li>
+    <li>Mostrar el panel en una pantalla: la zona y su estado.</li>
+    <li>Invitar a una persona a tocar «Regar ahora»: se ve el agua y el cambio en la pantalla.</li>
+    <li>Explicar en una frase qué pasaría solo: «Si la tierra se seca y no va a llover, lo hace sola».</li>
+  </ol>
+
+  <h3>Qué puede fallar y cómo reaccionar</h3>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Riesgo</th><th>Cómo se nota</th><th>Qué hacer</th></tr></thead>
+    <tbody>
+      <tr><td>Sin WiFi en la sala</td><td>La zona aparece «Sin conexión».</td><td>Usar un hotspot del celular (red de 2,4 GHz) cargado antes en <code>secrets.h</code>. Se pueden cargar hasta tres redes.</td></tr>
+      <tr><td>Red que aísla dispositivos</td><td>El nodo no aparece para cargar por WiFi (OTA).</td><td>Cargar el firmware por USB con anticipación; la red de la UTN no permite OTA.</td></tr>
+      <tr><td>«Regar ahora» no hace nada</td><td>Aparece un aviso de modo lectura u orden rechazada.</td><td>El backend debe correr con <code>MODO_ESCRITURA=true</code> y el prefijo <code>gda/prod</code>. Solo puede haber un backend con escritura.</td></tr>
+      <tr><td>La bomba no mueve agua</td><td>Se oye el clic del relé pero no sale agua.</td><td>Revisar pilas, nivel del tanque y manguera.</td></tr>
+      <tr><td>El riego automático no se dispara a tiempo</td><td>El suelo está seco y no pasa nada.</td><td>Recordar la espera de 10 min entre riegos y que la telemetría llega cada 30 s. No prometer un riego automático en vivo si no está ensayado.</td></tr>
+      <tr><td>Fallo general</td><td>—</td><td>Tener un <b>video grabado</b> de la demo completa y capturas del panel como respaldo.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note warn"><b>Antes del día</b><p>Los datos de las zonas de ejemplo duran 24 horas: hay que volver a cargarlos el mismo día (<code>npm run seed:demo</code>). Ensayar la demo completa al menos una vez con el mismo equipo y la misma red del día.</p></div>
+</div></section>
+
+<!-- ═══ 6 ═══ -->
+<section class="chapter" id="glosario"><div class="wrap">
+  <h2>6. Traducciones y preguntas</h2>
+  <h3>Cómo decirlo para todo público</h3>
+  <p>Para puertas abiertas, cada término técnico tiene su traducción. Usarlas con naturalidad evita perder a la audiencia.</p>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Término técnico</th><th>Cómo decirlo</th></tr></thead>
+    <tbody>
+      <tr><td>Nodo / ESP32</td><td>La «mini computadora» con WiFi que está junto a la maceta.</td></tr>
+      <tr><td>Sensor de humedad del suelo</td><td>Una varilla que se clava en la tierra y «siente» si está seca o mojada.</td></tr>
+      <tr><td>Relé</td><td>Un interruptor que la mini computadora usa para prender y apagar la bomba.</td></tr>
+      <tr><td>Telemetría</td><td>Las lecturas que el nodo manda cada tanto.</td></tr>
+      <tr><td>Broker MQTT</td><td>El «correo» por donde se mandan mensajes entre el nodo y el sistema.</td></tr>
+      <tr><td>Backend</td><td>El «cerebro» que decide cuándo regar.</td></tr>
+      <tr><td>Umbral</td><td>El límite: lo mínimo y lo máximo de humedad que le gusta a la planta.</td></tr>
+      <tr><td>Base de datos</td><td>La «libreta» donde queda anotado todo lo que pasó.</td></tr>
+      <tr><td>Tiempo real (SSE)</td><td>La pantalla se actualiza sola, sin tener que refrescar.</td></tr>
+      <tr><td>Pronóstico / probabilidad de lluvia</td><td>El sistema mira el clima para no regar si va a llover.</td></tr>
+      <tr><td>Zona</td><td>Un grupo de macetas con las mismas necesidades, como los helechos de un vivero.</td></tr>
+      <tr><td>Alerta</td><td>Un aviso en pantalla y por mail cuando algo no está bien.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Preguntas del público general</h3>
+  <div class="filters"><input id="pubSearch" type="search" placeholder="Buscar pregunta (ej.: internet, costo, luz)" aria-label="Buscar pregunta del público"></div>
+  <div class="slides" id="pubFaq" style="margin-top:14px"></div>
+
+  <div class="note"><b>Preguntas técnicas</b><p>Las 17 preguntas probables de la defensa, con respuesta, están en la sección 9 de la Guía del código. Cada diapositiva técnica de arriba indica cuáles le tocan.</p></div>
+</div></section>
+
+<!-- ═══ 7 ═══ -->
+<section class="chapter" id="actualizar"><div class="wrap">
+  <h2>7. Qué actualizar antes de presentar</h2>
+  <p class="lead">Al comparar los tres documentos con el resto del material, aparecen datos desactualizados. Conviene corregirlos para que todas las diapositivas cuenten lo mismo.</p>
+  <div class="note crit"><b>La fuente de verdad del hardware es «Conexiones Nodo 1 GDA»</b><p>Refleja el armado que quedó funcionando el 28/10, después de resolver el relé. Cualquier otro material con el cableado anterior debe corregirse.</p></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Material</th><th>Qué quedó desactualizado</th><th>Cómo es hoy</th></tr></thead>
+    <tbody>
+      <tr><td>Presentación del proyecto (<code>GDA_Presentacion.html</code>), sección de conexiones del nodo</td><td>Dibuja el relé en el GPIO 26, alimentado desde VIN (5 V), con otra convención de colores, y su regla dice que el relé va a 5 V.</td><td>El relé va en el GPIO 27 y se alimenta desde el riel de 3,3 V (con 5 V no se apaga). Hay que redibujar el esquema y corregir esa regla.</td></tr>
+      <tr><td>Documentos <code>GDA_Documentacion_Nodo1.md</code> y la guía de hardware</td><td>Describen el cableado y la versión anteriores.</td><td>Reemplazar por el contenido de «Conexiones Nodo 1 GDA».</td></tr>
+      <tr><td>Versión del firmware en los documentos</td><td>Se menciona v2.1.</td><td>El firmware actual es v2.5.</td></tr>
+      <tr><td>Calibración</td><td>Hay material que habla de «calibrar todavía» o de valores de ejemplo.</td><td>Ya está calibrado: 4095 en aire y 1925 en agua.</td></tr>
+      <tr><td>Nombre del sistema</td><td>«Gemelo Digital Agrícola» ya no describe el alcance (macetas y viveros).</td><td>Falta decidir si se cambia el nombre. Si cambia, actualizarlo en el panel, la presentación, los documentos y la portada.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note warn"><b>Una corrección sobre mis explicaciones anteriores</b><p>Durante el problema del relé, yo te sugerí soluciones de hardware (separar la alimentación con el jumper, un transistor o cambiar el módulo). La causa real resultó ser más simple: el módulo se alimentaba a 5 V y había que alimentarlo a 3,3 V. Les conviene contar la versión de «Conexiones Nodo 1», que es la que está comprobada.</p></div>
+  <p>Si querés, actualizo la presentación del proyecto, el resto de los documentos y el nombre cuando lo decidan.</p>
+</div></section>
+
+<!-- ═══ 8 ═══ -->
+<section class="chapter" id="reparto"><div class="wrap">
+  <h2>8. Reparto del equipo</h2>
+  <p class="lead">Completar entre todos. La idea es que quede claro quién cuenta cada diapositiva y quién respalda ante las preguntas de ese tema.</p>
+  <div class="tbl-wrap"><table id="tblReparto">
+    <thead><tr><th>Presentación y diapositiva</th><th>Quién expone</th><th>Quién respalda las preguntas</th><th>Qué aporta (lo que hizo)</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+  <div class="note"><b>Cómo completarlo</b><p>Para cada eje del proyecto (nodo, comunicación, backend, base de datos y frontend) debe haber al menos una persona que lo haya hecho y pueda explicarlo en detalle. Después, cada diapositiva se asigna a quien mejor la conozca, y la persona que respalda es quien no la expone pero sabe del tema.</p></div>
+</div></section>
+
+<footer><div class="wrap">GDA · Plan de las presentaciones · Proyecto Integrador — Comunicaciones · UTN San Francisco · 2026</div></footer>
+</main>
+</div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ───────── Diapositivas de la presentación técnica ─────────
+  const TEC = [
+    { t: 'Portada y equipo', time: '0,5 min', sub: 'Presentar el proyecto y al equipo',
+      mostrar: '<p>Nombre del proyecto, una frase («Mide, decide y riega»), la materia, la facultad, el año y los integrantes.</p>',
+      decir: '<p>«Somos [nombres]. Presentamos GDA, un sistema de riego automatizado para macetas y viveros, que construimos de punta a punta: hardware, comunicación, servidor y panel.»</p>',
+      extra: '<ul><li>El nombre definitivo sigue pendiente (ver sección 7).</li><li>Conviene anunciar de entrada el orden: problema, arquitectura, nodo, backend, base de datos y panel, demo y cierre.</li></ul>',
+      pregs: [], fuente: '—' },
+    { t: 'Problema, propósito e idea', time: '1,5 min', sub: 'Por qué existe el sistema y cómo cambió el alcance',
+      mostrar: '<p>Tres bloques: <b>problema</b>, <b>propósito</b> e <b>idea</b>, y una línea de evolución «un campo → macetas y viveros».</p>',
+      decir: '<ul><li>Regar a ojo falla: se riega de más, de menos o a destiempo, y depende de que alguien esté.</li><li>Propósito: automatizar con datos reales (humedad, temperatura y pronóstico) y dejar todo registrado.</li><li>La idea original era un gemelo digital de un campo; la acotamos a macetas y viveros para poder validar el ciclo completo con hardware real.</li></ul>',
+      extra: '<ul><li><b>Qué es el «gemelo digital» acá:</b> cada zona tiene una representación digital de su estado real: valor actual, historial, límites y pronóstico. No es un modelo 3D.</li><li><b>Por qué se acotó:</b> un campo exige red de largo alcance, energía solar, riego de gran escala y muchos nodos.</li><li><b>Aplicaciones:</b> hogares, huertas y viveros; a futuro campos y canchas.</li></ul>',
+      pregs: [['¿En qué se diferencia de un temporizador de riego?', 'El temporizador riega por hora, aunque llueva o el suelo ya esté húmedo. Nosotros decidimos según la humedad real, la lluvia prevista y la configuración de cada zona, y dejamos registro y alertas.'], ['¿Cuánta agua ahorra?', 'No lo medimos y no damos cifras. Lo que podemos decir es qué evita: regar si va a llover, si el suelo ya está húmedo o dos veces seguidas.'], ['¿Por qué se llama «gemelo digital»?', 'Porque cada zona tiene una réplica digital de su estado real, que se actualiza sola.']],
+      fuente: 'Guía del código §1 · Prompt original del proyecto' },
+    { t: 'Arquitectura y tecnologías', time: '2 min', sub: 'El diagrama con la tecnología de cada pieza y su porqué',
+      mostrar: '<p>El diagrama de arquitectura (nodo, broker, backend, base de datos, panel, clima y email) y, junto a cada pieza, su tecnología con una línea de «por qué». Que cada frase aparezca a medida que se explica esa pieza.</p><div class="tbl-wrap"><table><thead><tr><th>Pieza</th><th>Tecnología</th><th>Por qué</th></tr></thead><tbody><tr><td>Nodo</td><td>ESP32</td><td>Microcontrolador con WiFi, económico y fácil de programar</td></tr><tr><td>Comunicación</td><td>MQTT + HiveMQ Cloud</td><td>Liviano, pensado para dispositivos chicos; desacopla las partes</td></tr><tr><td>Backend</td><td>Node.js + Express</td><td>Un solo lenguaje en todo el proyecto; bueno para muchas conexiones</td></tr><tr><td>Datos</td><td>MongoDB Atlas</td><td>Los datos son documentos parecidos a los mensajes del nodo</td></tr><tr><td>Panel</td><td>Vue 3 + Quasar</td><td>Se actualiza solo; trae componentes listos</td></tr><tr><td>Tiempo real</td><td>SSE</td><td>El panel solo necesita recibir novedades</td></tr></tbody></table></div>',
+      decir: '<p>Recorrer de izquierda a derecha. Remarcar dos ideas: el nodo mide y ejecuta pero el backend decide, y el broker en la nube es el punto de encuentro: nodo y backend no necesitan compartir red.</p>',
+      extra: '<ul><li>El backend es un <b>cliente MQTT</b> más; no hay broker propio.</li><li>Cinco canales: REST y SSE hacia el navegador, MQTT con el nodo, el protocolo de MongoDB, y HTTPS/SMTP hacia clima y correo.</li><li>HiveMQ en plan gratuito: 100 conexiones y 10 GB al mes; con telemetría cada 30 s se consumen unos 17 MB al mes (dato del documento de conexión MQTT).</li><li>Cada tecnología tiene su alternativa y su contra en la Guía, sección 8.</li></ul>',
+      pregs: [['¿Por qué MQTT y no HTTP?', 'Es liviano y permite que el backend mande órdenes al nodo sin que éste tenga que preguntar. Con HTTP el nodo consultaría constantemente, con más consumo y demora.'], ['¿Por qué MongoDB y no SQL?', 'Los datos son documentos como los mensajes del nodo, el esquema evoluciona sin migraciones y las consultas son «por zona y por fecha», que los índices resuelven bien.'], ['¿Por qué un broker en la nube?', 'No hace falta compartir red ni abrir puertos, y si el backend se reinicia el nodo sigue funcionando.']],
+      fuente: 'Guía del código §1, §7 y §8 · Conexión MQTT (diapositivas 2 y 3)' },
+    { t: 'El nodo y la comunicación', time: '1,5 min', sub: 'Qué mide, cómo ejecuta y qué mensajes viajan',
+      mostrar: '<p>Un esquema simplificado del nodo con tres conexiones (suelo → GPIO 34, aire → GPIO 15, relé → GPIO 27, y la bomba con su propia fuente), y los tres topics con un mensaje JSON de cada uno.</p>',
+      decir: '<ul><li>El ESP32 lee suelo y aire y publica cada 30 s.</li><li>Recibe órdenes por <code>…/comando</code> y, cuando la bomba cambia de estado, avisa por <code>…/evento</code>.</li><li>La bomba nunca se conecta al ESP32: el relé hace de interruptor.</li></ul>',
+      extra: '<ul><li><b>Relé:</b> activo en bajo y alimentado a 3,3 V; con 5 V los 3,3 V del ESP32 no alcanzan para apagarlo. Es la anécdota de ingeniería más fuerte.</li><li><b>Sensor de suelo:</b> a 3,3 V, nunca a 5 V; en el GPIO 34 (ADC1), que sigue leyendo con WiFi activo. Calibrado en 4095 (aire) y 1925 (agua); promedia 10 lecturas.</li><li><b>AM2302:</b> en el GPIO 15, que es pin de arranque. Si falla, se conserva la última lectura buena hasta 2 min y luego se omite.</li><li><b>Conexión segura:</b> TLS en el puerto 8883, con el certificado ISRG Root X1 embebido. Usuario y contraseña por cliente, y permisos distintos para el nodo, el backend y las cuentas personales.</li><li><b>Seguridad:</b> las cuatro capas contra riegos accidentales (sección 1).</li><li>El <code>commandId</code> viaja en la orden y vuelve en el evento: así se sabe qué orden se confirmó.</li></ul>',
+      pregs: [['¿Qué pasa si se cae el WiFi regando?', 'El nodo mide el tiempo él mismo y apaga la bomba al cumplirse, y nunca riega más de 120 s por orden.'], ['¿Cómo evitan que riegue sin querer?', 'Cuatro capas: nodo, backend, modo escritura y permisos del broker.'], ['¿Por qué el relé a 3,3 V?', 'Porque es activo en bajo: para apagarlo hace falta que la entrada quede cerca de su propia alimentación; a 5 V el HIGH de 3,3 V no lo apagaba.'], ['¿Cómo se calibró el sensor?', 'Se midió el valor crudo con la horquilla al aire (4095) y en agua (1925) y el firmware lo convierte a 0–100 %.']],
+      fuente: 'Conexiones Nodo 1 GDA · Conexión MQTT (diapositivas 4 a 8)' },
+    { t: 'Backend y motor de decisión', time: '2 min', sub: 'Las capas, el ciclo de riego y las reglas',
+      mostrar: '<p>Las capas en una línea (<code>routes → controllers → services → models</code>), las reglas de decisión en una tabla o con el simulador de la presentación, y el ciclo de riego en pocos pasos.</p>',
+      decir: '<ul><li>El backend recibe la telemetría, la valida, la guarda y compara con los límites de la zona.</li><li>Si está seca y no va a llover, ordena regar; si va a llover, pospone; si está húmeda de más, no riega y avisa.</li><li>Todo queda registrado, incluso la decisión de no regar.</li></ul>',
+      extra: '<ul><li><b>Espera de 10 min</b> entre riegos automáticos: el suelo tarda en reflejar el agua.</li><li><b>La lluvia nunca deja secar la planta:</b> si cae 10 puntos bajo el mínimo (emergencia) o lleva 6 h esperando, riega igual. Las zonas interiores ignoran el pronóstico.</li><li><b>Solo el evento del nodo confirma</b> un riego; la telemetría no, porque podría ser anterior a la orden. Sin confirmación en duración + 60 s, la orden expira.</li><li><b>Anti-repetición:</b> una sola alerta activa por tipo y zona; el email no se repite mientras la condición sigue.</li><li><b>Seguridad de la API:</b> JWT con renovación, roles, filtro por dueño, validación con Joi, límites de uso, helmet y CORS.</li><li><b>Modo lectura:</b> protege a la bomba real de los backends de desarrollo.</li></ul>',
+      pregs: [['¿Cómo evitan regar dos veces seguido?', 'Una sola orden pendiente por zona, espera de 10 minutos y decisiones repetidas que no generan eventos repetidos.'], ['¿Cómo saben que el riego ocurrió?', 'Solo lo confirma el evento del nodo con el mismo commandId.'], ['¿Qué pasa si Open-Meteo falla?', 'Se usa el último pronóstico guardado; el motor nunca llama a la API en el momento de decidir.'], ['¿Qué es el modo lectura?', 'Que el backend evalúa y registra pero no publica órdenes; solo el desplegado corre con escritura.']],
+      fuente: 'Guía del código §2, §3, §4 y §9' },
+    { t: 'Base de datos y frontend', time: '1,5 min', sub: 'Qué se guarda y cómo se ve en vivo',
+      mostrar: '<p>El diagrama de relaciones de las 7 colecciones (con la zona al centro) y una captura del panel con una frase sobre el tiempo real.</p>',
+      decir: '<ul><li>MongoDB guarda usuarios, zonas, lecturas, eventos, órdenes, alertas y el caché de pronóstico.</li><li>El panel está hecho en Vue y se actualiza solo: el backend le empuja las novedades por una conexión SSE.</li><li>Hay tres roles, y cada persona ve solo sus zonas.</li></ul>',
+      extra: '<ul><li><b>Idempotencia:</b> un índice único por nodo y hora de medición impide duplicar lecturas cuando el nodo reenvía.</li><li><b>Resumen en la zona:</b> la zona guarda su último estado para que el panel cargue rápido; el historial completo sigue en <code>Reading</code>.</li><li><b>Gráfico de 24 h</b> agregado en la base (~300 puntos).</li><li><b>Borrado lógico:</b> primero se desactiva; recién ahí se puede eliminar con su historial.</li><li><b>Frontend:</b> <code>api.js</code> es el único lugar que conoce las rutas; un interceptor agrega el token y renueva la sesión; la guarda del router protege las pantallas; la misma tabla pasa a tarjetas en celular.</li><li><b>SSE:</b> usa un token efímero porque el navegador no permite cabeceras en esa conexión.</li></ul>',
+      pregs: [['¿Por qué SSE y no WebSocket?', 'El panel solo necesita recibir novedades; lo que envía va por REST. SSE es más simple y se reconecta solo.'], ['¿Cómo evitan guardar lecturas duplicadas?', 'Con un índice único por nodo y hora de medición.'], ['¿Un usuario puede ver zonas de otro?', 'No: toda consulta lleva el filtro por dueño; solo el administrador ve todo.']],
+      fuente: 'Guía del código §5 y §6' },
+    { t: 'Demo en vivo', time: '2 min', sub: 'El ciclo completo con el nodo real',
+      mostrar: '<p>El panel, el broker (MQTT Explorer) y el nodo físico a la vista. Seguir el guion de la sección 5.</p>',
+      decir: '<p>Narrar cada paso: «tocamos Regar ahora… la orden sale por <code>comando</code>… el nodo enciende la bomba… avisa por <code>evento</code>… y el panel lo muestra confirmado».</p>',
+      extra: '<ul><li>Aclarar que las otras zonas del panel son <b>de ejemplo</b> y que solo el nodo real mide y riega.</li><li>Tener listo el video de respaldo.</li><li>Recordar la espera de 10 min si preguntan por qué no riega de nuevo enseguida.</li></ul>',
+      pregs: [['¿Esas otras zonas son reales?', 'No: son datos de demostración, rotulados, para mostrar cómo se vería un vivero. El nodo real es el único que mide y riega.']],
+      fuente: 'Sección 5 de este documento · Conexiones Nodo 1 («Verificación después de armar»)' },
+    { t: 'Límites, mejoras y cierre', time: '1 min', sub: 'Lo que reconocemos y hacia dónde puede ir',
+      mostrar: '<p>Una tabla corta de límites → mejoras y un esquema de «del prototipo al vivero». Cerrar con tres ideas.</p>',
+      decir: '<ul><li>Hoy hay un nodo y un sensor de suelo por nodo.</li><li>Un vivero real tendría un nodo por zona, con varios sensores, una bomba compartida y una electroválvula por zona.</li><li>Cierre: <b>mide, decide y riega</b>; <b>el nodo ejecuta y el backend decide</b>; <b>todo queda registrado y se ve en vivo</b>.</li></ul>',
+      extra: '<ul><li><b>Por qué no un ESP32 por maceta:</b> costo, mantenimiento y WiFi; las macetas vecinas con la misma especie se secan casi igual, así que se mide una muestra por zona.</li><li>No hay electroválvulas todavía: se explican como parte del diseño.</li><li><b>Límites honestos:</b> un solo nodo físico, sin tests unitarios (hay pruebas de punta a punta y de alertas), una sola instancia del backend, tokens que no se pueden revocar antes de vencer y WiFi como red (un campo requeriría otra).</li></ul>',
+      pregs: [['¿Escala a un vivero real?', 'La lógica ya distingue nodos por identificador; faltaría varios sensores por nodo y electroválvulas por zona, y revisar los límites del broker y del backend.'], ['¿Por qué no un ESP32 por maceta?', 'Sale caro y complejo de mantener, y no hace falta medir cada maceta si comparten necesidades.']],
+      fuente: 'Guía del código §10 · explicación de zonas y electroválvulas' }
+  ];
+
+  // ───────── Diapositivas de puertas abiertas ─────────
+  const PUB = [
+    { t: 'Portada', time: '20 s', sub: 'Nombre, equipo y una frase',
+      mostrar: '<p>El nombre, una imagen de la maceta con el sistema y la frase <b>«Mide, decide y riega»</b>.</p>', decir: '<p>«Somos [nombres] y construimos un sistema para que las plantas se rieguen solas.»</p>',
+      extra: '<ul><li>Sin siglas ni nombres técnicos: «GDA» se explica como el nombre del proyecto.</li></ul>', pregs: [] },
+    { t: 'El problema', time: '40 s', sub: 'Una pregunta cercana',
+      mostrar: '<p>Una imagen de una planta seca y otra encharcada, con la pregunta «¿cuánta agua necesita tu planta?».</p>', decir: '<div class="say">«A veces nos olvidamos de regar, a veces regamos de más. Y si nos vamos de viaje, las plantas esperan.»</div>',
+      extra: '<ul><li>Preparar un ejemplo cotidiano que el público reconozca (el balcón, la huerta, un vivero).</li></ul>', pregs: [] },
+    { t: 'Nuestra idea', time: '30 s', sub: 'Un sistema que cuida solo',
+      mostrar: '<p>Una frase y una ilustración: la planta, el sensor, la bomba y el celular.</p>', decir: '<div class="say">«Hicimos un sistema que mide cómo está la planta y la riega solo cuando hace falta.»</div>',
+      extra: '<ul><li>Si preguntan por «gemelo digital»: es una copia digital de la maceta que sabe cómo está.</li></ul>', pregs: [['¿Cómo se llama?', 'Decir el nombre definitivo que elijan (hoy GDA).']] },
+    { t: 'Cómo funciona, en tres pasos', time: '1 min', sub: 'Mide, decide, riega',
+      mostrar: '<p>Un esquema de tres cajas con flechas: <b>Mide</b> (sensor en la tierra) → <b>Decide</b> (el cerebro) → <b>Riega</b> (la bomba).</p>', decir: '<div class="say">«Un sensor mide la humedad. Un cerebro compara con lo que la planta necesita y mira si va a llover. Si hace falta, prende la bomba.»</div>',
+      extra: '<ul><li>No hace falta nombrar el broker ni el backend. Si preguntan, el «cerebro» es un programa en internet.</li></ul>', pregs: [['¿Y si va a llover?', 'El sistema mira el pronóstico y espera para no regar de más; pero si la planta está muy seca, riega igual.']] },
+    { t: 'Conocé el nodo', time: '1 min', sub: 'El objeto físico',
+      mostrar: '<p>El nodo real a la vista, con carteles chicos: «sensor de tierra», «sensor de aire», «interruptor» y «bomba».</p>', decir: '<div class="say">«Esta placa es una mini computadora con WiFi. Lee la tierra y el aire, y maneja la bomba.»</div>',
+      extra: '<ul><li>Dato curioso para contar: al principio la bomba no se apagaba, y la solución fue cambiar cómo se alimentaba el interruptor.</li><li>Decir que la bomba tiene su propia alimentación (pilas) por seguridad.</li></ul>', pregs: [['¿Es peligroso?', 'No: la placa trabaja con muy poca tensión, la bomba tiene su propia alimentación y tiene un tope de tiempo para no regar de más.']] },
+    { t: 'El cerebro: qué decide', time: '1 min', sub: 'Las reglas en lenguaje simple',
+      mostrar: '<p>Cuatro frases con íconos: tierra seca → riega; va a llover → espera; tierra muy mojada → no riega y avisa; mucho calor → riega un poco.</p>', decir: '<div class="say">«Cada planta tiene un mínimo y un máximo de humedad. El sistema las cuida entre esos límites.»</div>',
+      extra: '<ul><li>Se puede usar el simulador de la presentación con un visitante: que mueva el control de humedad y vea qué haría el sistema.</li></ul>', pregs: [['¿Puede regar de más?', 'No: espera diez minutos entre riegos, tiene un tope de tiempo y no riega si el suelo ya está húmedo.']] },
+    { t: 'El panel', time: '1 min', sub: 'Lo que se ve desde el celular o la computadora',
+      mostrar: '<p>Capturas (o el panel en vivo) con las zonas, sus estados y una alerta.</p>', decir: '<div class="say">«Acá vemos cómo está cada zona y recibimos avisos si algo anda mal. Se actualiza solo.»</div>',
+      extra: '<ul><li>Aclarar que las zonas rotuladas «de ejemplo» son demostración y que la real es la del nodo.</li><li>El panel funciona en celular (se ve en tarjetas).</li></ul>', pregs: [['¿Se puede ver desde el celular?', 'Sí: es una página web y se adapta al celular.']] },
+    { t: 'Demo en vivo', time: '2 min', sub: 'El momento principal',
+      mostrar: '<p>El nodo real, la maceta, el tanque y el panel en una pantalla.</p>', decir: '<div class="say">«Probemos: tocá “Regar ahora”.» (El visitante toca, se ve el agua y el cambio a «Regando…».)</div>',
+      extra: '<ul><li>Seguir el guion simple de la sección 5. Tener el video de respaldo.</li></ul>', pregs: [] },
+    { t: 'Avisos', time: '30 s', sub: 'Alertas en pantalla y por mail',
+      mostrar: '<p>Una captura de alerta y un mail de ejemplo.</p>', decir: '<div class="say">«Si la tierra está demasiado seca o mojada, hace mucho calor o el sensor deja de responder, te avisa.»</div>',
+      extra: '<ul><li>Cada persona elige qué avisos recibir.</li></ul>', pregs: [] },
+    { t: '¿Para quién sirve?', time: '40 s', sub: 'Casa, huerta y vivero',
+      mostrar: '<p>Tres imágenes: una maceta en casa, una huerta y un vivero con zonas.</p>', decir: '<div class="say">«En casa cuida tus plantas. En un vivero, cada zona tiene su especie y sus necesidades.»</div>',
+      extra: '<ul><li>Explicar el vivero: la zona agrupa plantas con las mismas necesidades; una bomba y una llave por zona (aún no armadas, es parte del diseño).</li></ul>', pregs: [['¿Sirve para un jardín grande o un campo?', 'Hoy está pensado para macetas y viveros. Un campo necesitaría otra red de comunicación y más equipamiento.']] },
+    { t: 'Lo que aprendimos', time: '40 s', sub: 'Contado como anécdota',
+      mostrar: '<p>Una o dos anécdotas con imagen: la bomba que no se apagaba, el sensor que marcaba siempre cero.</p>', decir: '<div class="say">«Al principio la bomba no se apagaba. Probamos de todo hasta descubrir que el interruptor necesitaba menos tensión.»</div>',
+      extra: '<ul><li>Elegir la anécdota que más cómodo le resulte contar a quien exponga.</li></ul>', pregs: [] },
+    { t: 'Qué viene', time: '30 s', sub: 'Hacia dónde puede crecer',
+      mostrar: '<p>Una línea de tiempo con tres pasos: más sensores, más zonas, otros usos.</p>', decir: '<div class="say">«Queremos sumar más zonas y más sensores para que sirva en un vivero completo.»</div>',
+      extra: '<ul><li>No prometer fechas.</li></ul>', pregs: [] },
+    { t: 'Cierre', time: '20 s', sub: 'Una frase y gracias',
+      mostrar: '<p>La frase <b>«Mide, decide y riega»</b>, el nombre del equipo y un código para ver más (opcional).</p>', decir: '<div class="say">«Gracias por visitarnos. ¿Querés probar el sistema?»</div>',
+      extra: '<ul><li>Invitar a probar la demo a quien se acerque.</li></ul>', pregs: [] }
+  ];
+
+  const PUB_FAQ = [
+    ['¿Funciona sin internet?', 'Necesita WiFi e internet: el cerebro del sistema está en la nube. Si se corta la conexión mientras la bomba riega, la bomba igual se apaga sola por tiempo.'],
+    ['¿Qué pasa si se corta la luz?', 'El nodo se apaga junto con la bomba. Al volver la luz, se reconecta solo y sigue funcionando.'],
+    ['¿Cuánto cuesta?', 'Preparar esta respuesta con los precios reales de los componentes antes de la jornada. No tenemos calculado el costo final y no conviene improvisar una cifra.'],
+    ['¿Sirve para cualquier planta?', 'Sí: cada zona se configura con la humedad que necesita su especie. No hay un valor único.'],
+    ['¿Puede regar de más?', 'No: espera diez minutos entre riegos, no riega si el suelo ya está húmedo ni si va a llover, y la bomba tiene un tope de tiempo.'],
+    ['¿Se puede usar desde el celular?', 'Sí: el panel es una página web y se adapta al celular.'],
+    ['¿En qué se diferencia de un temporizador?', 'El temporizador riega a una hora fija. Este mide la tierra, mira el clima y decide cuándo hace falta.'],
+    ['¿Cuánta agua ahorra?', 'No lo medimos todavía. Lo que sí hace es evitar los riegos de más: no riega si va a llover, ni dos veces seguidas.'],
+    ['¿Quién puede manejarlo?', 'Hay tres tipos de usuario: quien administra todo, quien configura y riega, y quien solo mira.'],
+    ['¿Qué pasa si el sensor se rompe?', 'El sistema se da cuenta: si deja de recibir datos por un rato, avisa y marca la zona como sin conexión.']
+  ];
+
+  function renderSlides(root, data, kind) {
+    root.innerHTML = data.map((s, i) => {
+      const pregs = (s.pregs || []).map(([q, a]) => `<div class="qa"><b>${esc(q)}</b><span>${esc(a)}</span></div>`).join('');
+      return `<details class="slide"${i === 0 ? ' open' : ''}>
+        <summary><span class="num">${i + 1}</span><span><b>${esc(s.t)}</b><small>${esc(s.sub)}</small></span><span class="time">${esc(s.time)}</span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="sbody">
+          <div class="row"><span class="k">Qué mostrar</span><div class="v">${s.mostrar}</div></div>
+          <div class="row"><span class="k">Qué decir</span><div class="v">${s.decir}</div></div>
+          <div class="row"><span class="k">Info extra para saber</span><div class="v">${s.extra}</div></div>
+          ${pregs ? `<div class="row"><span class="k">Preguntas probables</span><div class="v">${pregs}</div></div>` : ''}
+          ${s.fuente ? `<div class="row"><span class="k">Dónde está</span><div class="v who">${esc(s.fuente)}</div></div>` : ''}
+          <div class="row"><span class="k">Responsable</span><div class="v who">Expone: <span class="blank"></span> &nbsp; Respalda: <span class="blank"></span></div></div>
+        </div>
+      </details>`;
+    }).join('');
+  }
+  renderSlides($('#slidesTec'), TEC, 'tec');
+  renderSlides($('#slidesPub'), PUB, 'pub');
+
+  // ───────── Preguntas del público (buscador) ─────────
+  function renderPubFaq() {
+    const q = $('#pubSearch').value.trim().toLowerCase();
+    const items = PUB_FAQ.filter(([a, b]) => !q || `${a} ${b}`.toLowerCase().includes(q));
+    $('#pubFaq').innerHTML = items.length
+      ? items.map(([a, b]) => `<details class="slide"><summary style="grid-template-columns:1fr 24px"><span><b>${esc(a)}</b></span><svg class="ic chev"><use href="#i-right"/></svg></summary><div class="sbody"><div class="row" style="grid-template-columns:1fr"><div class="v"><p>${esc(b)}</p></div></div></div></details>`).join('')
+      : '<p style="color:var(--soft)">Ninguna pregunta coincide.</p>';
+  }
+  $('#pubSearch').addEventListener('input', renderPubFaq);
+  renderPubFaq();
+
+  // ───────── Lista de preparación de la demo ─────────
+  const CHECKS = [
+    'Nodo armado según «Conexiones Nodo 1», con el relé alimentado desde 3,3 V y la bomba en el borne NO.',
+    'Pilas de la bomba cargadas, tanque con agua y manguera hacia la maceta.',
+    'Horquilla del sensor enterrada en la tierra de la maceta, con el módulo y los cables firmes.',
+    'Firmware v2.5 cargado y verificado: al arrancar el monitor muestra «RELE: apagado | GPIO 27 = HIGH».',
+    'WiFi probado en el lugar (red de 2,4 GHz). Hotspot del celular cargado como respaldo en secrets.h.',
+    'Backend corriendo con las credenciales y el prefijo de producción, y con MODO_ESCRITURA=true. Es el único backend con escritura.',
+    'Zona del nodo real cargada en el panel con nodeId nodo1, límites razonables para la planta y ubicación para el pronóstico.',
+    'Zonas de ejemplo cargadas el mismo día (npm run seed:demo).',
+    'Prueba completa hecha 30 minutos antes: «Regar ahora» confirma el riego y el panel lo refleja.',
+    'Alertas probadas y, si se muestran por email, SMTP configurado.',
+    'MQTT Explorer abierto y conectado con una cuenta de solo lectura.',
+    'Video grabado de la demo completa y capturas del panel como plan B.',
+    'Una persona designada para vigilar el sistema (agua, pilas, WiFi) durante la demo.'
+  ];
+  const key = 'gda-checks-v1';
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { /* sin almacenamiento */ }
+  $('#checksDemo').innerHTML = CHECKS.map((c, i) => `<li><label><input type="checkbox" data-i="${i}" ${saved[i] ? 'checked' : ''}><span>${esc(c)}</span></label></li>`).join('');
+  $('#checksDemo').addEventListener('change', (e) => {
+    const cb = e.target.closest('input'); if (!cb) return;
+    saved[cb.dataset.i] = cb.checked;
+    try { localStorage.setItem(key, JSON.stringify(saved)); } catch (err) { /* sin almacenamiento */ }
+  });
+
+  // ───────── Tabla de reparto ─────────
+  const rows = [...TEC.map((s, i) => ['Técnica', i + 1, s.t]), ...PUB.map((s, i) => ['Puertas abiertas', i + 1, s.t])];
+  $('#tblReparto tbody').innerHTML = rows.map(([p, n, t]) => `<tr><td>${esc(p)} · ${n}. ${esc(t)}</td><td><span class="blank"></span></td><td><span class="blank"></span></td><td><span class="blank" style="min-width:200px"></span></td></tr>`).join('');
+
+  // ───────── Índice activo ─────────
+  const links = $$('#tocNav a, .mob-nav a');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((en) => { if (en.isIntersecting) links.forEach((a) => a.classList.toggle('active', a.getAttribute('href') === '#' + en.target.id)); });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  $$('section.chapter').forEach((t) => io.observe(t));
+})();
+</script>
+</body>
+</html>

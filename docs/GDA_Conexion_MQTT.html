@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GDA — Conexión ESP32 ⇄ MQTT ⇄ Backend</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Albert+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--mist:#EFF3EC;--card:#fff;--ink:#1F2A22;--soft:#55665A;--hair:#D6E0D2;--pine:#24382B;--deep:#16211A;--leaf:#3E7C4F;--leaf2:#7FC98F;--tint:#E4EFE3;--water:#2E7DA6;--wtint:#E2EFF6;--clay:#B0562F;--sun:#C9822B;
+--display:'Bricolage Grotesque','Albert Sans',system-ui,sans-serif;--body:'Albert Sans','Segoe UI',system-ui,sans-serif;--mono:'IBM Plex Mono',Consolas,monospace}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{font-family:var(--body);background:var(--mist);color:var(--ink);font-size:clamp(15px,1.5vw,19px);line-height:1.5;overflow:hidden}
+.slide{position:absolute;inset:0 0 56px 0;padding:clamp(20px,4vw,56px) clamp(20px,6vw,90px);display:none;flex-direction:column;justify-content:center;gap:22px;overflow:auto}
+.slide.on{display:flex;animation:in .35s ease}
+@keyframes in{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
+h1{font-size:clamp(2.2rem,5.5vw,4.2rem);line-height:1.05;letter-spacing:-.02em;font-weight:800}
+h2{font-size:clamp(1.7rem,3.4vw,2.7rem);line-height:1.1;letter-spacing:-.02em;font-weight:800}
+h3{font-size:1.1rem;font-weight:600}
+p{margin:0}.lead{color:var(--soft);font-size:1.12em;max-width:60ch}
+.tag{font-family:var(--mono);font-size:.75em;letter-spacing:.12em;text-transform:uppercase;color:var(--leaf)}
+.grid{display:grid;gap:16px}.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.card{background:var(--card);border:1px solid var(--hair);border-radius:14px;padding:18px 20px}
+.card h3{margin-bottom:6px}.card p,.card li{color:var(--soft);font-size:.92em}.card ul{margin:0;padding-left:18px}
+.card.b{border-top:4px solid var(--water)}.card.g{border-top:4px solid var(--leaf)}.card.c{border-top:4px solid var(--clay)}.card.s{border-top:4px solid var(--sun)}
+code,pre{font-family:var(--mono)}code{background:var(--tint);color:var(--pine);padding:1px 6px;border-radius:5px;font-size:.88em}
+pre{margin:8px 0 0;background:var(--deep);color:#E7EFE4;padding:12px 14px;border-radius:10px;font-size:.72em;line-height:1.5;overflow:auto;white-space:pre-wrap}
+pre .k{color:var(--leaf2)}pre .n{color:#E9B872}
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:12px;overflow:hidden;border:1px solid var(--hair);font-size:.92em}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--hair)}th{background:var(--pine);color:#E7EFE4;font-weight:600}tr:last-child td{border:0}
+.dark{background:var(--pine);color:#E7EFE4}.dark .lead{color:#A9BBAD}.dark .tag{color:var(--leaf2)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch}
+.step{flex:1;min-width:150px;background:var(--card);border:1px solid var(--hair);border-radius:12px;padding:14px}
+.step b{display:block;font-family:var(--mono);font-size:.75em;color:var(--leaf);margin-bottom:4px}.step span{color:var(--soft);font-size:.88em}
+.arrow{align-self:center;color:var(--leaf);font-size:1.4em}
+.nav{position:fixed;left:0;right:0;bottom:0;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,4vw,48px);background:var(--card);border-top:1px solid var(--hair)}
+.nav button{font:600 .9rem var(--body);border:1px solid var(--hair);background:var(--mist);color:var(--ink);padding:8px 18px;border-radius:999px;cursor:pointer}
+.nav button:hover{background:var(--leaf);color:#fff;border-color:var(--leaf)}
+.bar{height:4px;position:fixed;top:0;left:0;background:var(--leaf);transition:width .3s}
+.cnt{font-family:var(--mono);font-size:.85rem;color:var(--soft)}
+svg{width:100%;height:auto;max-height:50vh}svg text{font-family:var(--body)}
+@media(max-width:640px){.arrow{display:none}}
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+
+<!-- 1 -->
+<section class="slide dark on">
+  <p class="tag">GDA · Gemelo Digital Agrícola</p>
+  <h1>Cómo se conectan el nodo ESP32, el broker MQTT y el backend</h1>
+  <p class="lead">Un broker en la nube (HiveMQ Cloud) como punto de encuentro: nadie necesita compartir red con nadie.</p>
+</section>
+
+<!-- 2 -->
+<section class="slide">
+  <p class="tag">Arquitectura</p>
+  <h2>Tres piezas, un punto fijo en la nube</h2>
+  <svg viewBox="0 0 900 250" role="img" aria-label="ESP32 publica al broker HiveMQ; el backend se suscribe y publica órdenes; el backend guarda en MongoDB Atlas">
+    <defs><marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#3E7C4F"/></marker></defs>
+    <rect x="10" y="60" width="210" height="120" rx="14" fill="#fff" stroke="#D6E0D2"/>
+    <text x="115" y="95" text-anchor="middle" font-weight="700" font-size="19" fill="#1F2A22">ESP32 (nodo1)</text>
+    <text x="115" y="122" text-anchor="middle" font-size="14" fill="#55665A">Sensor de suelo · AM2302</text>
+    <text x="115" y="144" text-anchor="middle" font-size="14" fill="#55665A">Relé + bomba</text>
+    <text x="115" y="166" text-anchor="middle" font-size="12" fill="#B0562F">físico, en la maceta</text>
+    <rect x="345" y="60" width="210" height="120" rx="14" fill="#E2EFF6" stroke="#2E7DA6" stroke-width="2"/>
+    <text x="450" y="100" text-anchor="middle" font-weight="700" font-size="19" fill="#1F2A22">HiveMQ Cloud</text>
+    <text x="450" y="126" text-anchor="middle" font-size="14" fill="#55665A">Broker MQTT</text>
+    <text x="450" y="150" text-anchor="middle" font-size="12" fill="#2E7DA6">TLS · puerto 8883</text>
+    <rect x="680" y="60" width="210" height="120" rx="14" fill="#fff" stroke="#D6E0D2"/>
+    <text x="785" y="95" text-anchor="middle" font-weight="700" font-size="19" fill="#1F2A22">Backend Node.js</text>
+    <text x="785" y="122" text-anchor="middle" font-size="14" fill="#55665A">Evalúa umbrales + pronóstico</text>
+    <text x="785" y="144" text-anchor="middle" font-size="14" fill="#55665A">Decide y guarda</text>
+    <text x="785" y="166" text-anchor="middle" font-size="12" fill="#3E7C4F">desplegado en la nube</text>
+    <line x1="222" y1="105" x2="343" y2="105" stroke="#3E7C4F" stroke-width="2.5" marker-end="url(#a)"/>
+    <text x="282" y="97" text-anchor="middle" font-size="12" fill="#3E7C4F">telemetría</text>
+    <line x1="343" y1="140" x2="222" y2="140" stroke="#3E7C4F" stroke-width="2.5" marker-end="url(#a)"/>
+    <text x="282" y="162" text-anchor="middle" font-size="12" fill="#3E7C4F">comando</text>
+    <line x1="557" y1="105" x2="678" y2="105" stroke="#3E7C4F" stroke-width="2.5" marker-end="url(#a)"/>
+    <text x="617" y="97" text-anchor="middle" font-size="12" fill="#3E7C4F">subscribe</text>
+    <line x1="678" y1="140" x2="557" y2="140" stroke="#3E7C4F" stroke-width="2.5" marker-end="url(#a)"/>
+    <text x="617" y="162" text-anchor="middle" font-size="12" fill="#3E7C4F">publish</text>
+    <rect x="680" y="210" width="210" height="34" rx="10" fill="#E4EFE3" stroke="#D6E0D2"/>
+    <text x="785" y="232" text-anchor="middle" font-size="14" fill="#24382B">MongoDB Atlas</text>
+    <line x1="785" y1="182" x2="785" y2="208" stroke="#3E7C4F" stroke-width="2" marker-end="url(#a)"/>
+  </svg>
+  <p class="lead">El ESP32 y el backend son <b>clientes</b> del broker. No se hablan entre sí: todo pasa por HiveMQ.</p>
+</section>
+
+<!-- 3 -->
+<section class="slide">
+  <p class="tag">Por qué un broker en la nube</p>
+  <h2>El broker es el punto fijo</h2>
+  <div class="grid g3">
+    <div class="card g"><h3>Sin red compartida</h3><p>El nodo y el backend se conectan al broker desde donde estén. No hace falta abrir puertos ni TCP proxy.</p></div>
+    <div class="card b"><h3>El backend es un cliente más</h3><p>Usa la librería <code>mqtt</code> de Node.js. No es un servidor MQTT: se suscribe y publica como cualquier otro.</p></div>
+    <div class="card s"><h3>Desacople</h3><p>Si el backend se reinicia, el nodo sigue midiendo y regando. Cada parte se despliega por separado.</p></div>
+  </div>
+  <p class="lead">Se usa el plan gratuito de HiveMQ: 100 conexiones y 10 GB/mes. Con telemetría cada 30 s consumimos ≈17 MB/mes.</p>
+</section>
+
+<!-- 4 -->
+<section class="slide">
+  <p class="tag">Conexión segura</p>
+  <h2>TLS obligatorio y permisos por rol</h2>
+  <div class="grid g2">
+    <div class="card b"><h3>Transporte</h3>
+      <ul><li><code>mqtts://</code> por el puerto <code>8883</code> (o 8884 WebSocket + TLS)</li>
+      <li>El ESP32 valida el certificado raíz <b>ISRG Root X1</b>, embebido en el firmware</li>
+      <li>Usuario y contraseña por cliente, definidos en HiveMQ</li></ul></div>
+    <div class="card g"><h3>Credenciales</h3>
+      <ul><li>Guardadas en <code>secrets.h</code> (nodo) y <code>.env</code> (backend)</li>
+      <li>Nunca se suben al repositorio</li>
+      <li>Cada cliente usa un <code>client ID</code> único: <code>esp32-nodo1</code>, <code>backend-prod</code></li></ul></div>
+  </div>
+  <table>
+    <tr><th>Cliente</th><th>Permiso</th><th>Para qué</th></tr>
+    <tr><td>Nodo (<code>gda_nodo1</code>)</td><td>Publish + Subscribe</td><td>Enviar datos y recibir órdenes</td></tr>
+    <tr><td>Backend desplegado (<code>gda_backend</code>)</td><td>Publish + Subscribe</td><td>Leer datos y ordenar riego</td></tr>
+    <tr><td>Cuentas personales de desarrollo</td><td>Solo Subscribe</td><td>Mirar, sin poder activar la bomba</td></tr>
+  </table>
+</section>
+
+<!-- 5 -->
+<section class="slide">
+  <p class="tag">Topics</p>
+  <h2>Tres topics por nodo</h2>
+  <p class="lead">Estructura: <code>{PREFIX}/{nodeId}/…</code> — en producción <code>gda/prod/nodo1/…</code></p>
+  <table>
+    <tr><th>Topic</th><th>Dirección</th><th>Contenido</th></tr>
+    <tr><td><code>…/telemetria</code></td><td>Nodo → Broker</td><td>Lecturas de sensores + diagnóstico</td></tr>
+    <tr><td><code>…/comando</code></td><td>Backend → Nodo</td><td>Orden de riego</td></tr>
+    <tr><td><code>…/evento</code></td><td>Nodo → Broker</td><td>Bomba encendida/apagada y motivo</td></tr>
+  </table>
+  <div class="grid g2">
+    <div class="card g"><h3>El nodeId es la clave</h3><p>Debe coincidir con el <b>Node ID</b> de la maceta en el dashboard. Así el backend asocia cada mensaje a su maceta.</p></div>
+    <div class="card c"><h3>Un prefijo por persona</h3><p>En desarrollo cada uno usa <code>gda/dev-nombre</code> para no pisarse ni interferir con producción.</p></div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="slide">
+  <p class="tag">Mensajes</p>
+  <h2>Qué viaja por cada topic</h2>
+  <div class="grid g3">
+    <div class="card g"><h3>Telemetría · cada 30 s</h3>
+<pre>{
+ <span class="k">"humedad"</span>: <span class="n">42</span>,
+ <span class="k">"temp_ambiente"</span>: <span class="n">24.3</span>,
+ <span class="k">"hum_ambiente"</span>: <span class="n">61.5</span>,
+ <span class="k">"bomba"</span>: true,
+ <span class="k">"rssi"</span>: -66, <span class="k">"ip"</span>: "…"
+}</pre></div>
+    <div class="card b"><h3>Comando · del backend</h3>
+<pre>{
+ <span class="k">"activar_riego"</span>: true,
+ <span class="k">"duracion_seg"</span>: <span class="n">5</span>,
+ <span class="k">"commandId"</span>: "uuid-…"
+}</pre>
+    <p style="margin-top:8px">El nodo se apaga solo al vencer el tiempo (<code>millis()</code>). Tope duro: 120 s.</p></div>
+    <div class="card s"><h3>Evento · del nodo</h3>
+<pre>{
+ <span class="k">"bomba"</span>: false,
+ <span class="k">"motivo"</span>: "fin de riego",
+ <span class="k">"duracion_seg"</span>: <span class="n">5</span>,
+ <span class="k">"commandId"</span>: "uuid-…"
+}</pre>
+    <p style="margin-top:8px">Es lo que <b>confirma</b> el riego.</p></div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="slide">
+  <p class="tag">Ciclo completo</p>
+  <h2>El nodo mide y ejecuta; el backend decide</h2>
+  <div class="flow">
+    <div class="step"><b>1 · ESP32</b><span>Mide y publica telemetría</span></div><div class="arrow">→</div>
+    <div class="step"><b>2 · Broker</b><span>Entrega al backend suscrito</span></div><div class="arrow">→</div>
+    <div class="step"><b>3 · Backend</b><span>Compara con umbrales y pronóstico</span></div><div class="arrow">→</div>
+    <div class="step"><b>4 · Orden</b><span>Publica en <code>/comando</code></span></div><div class="arrow">→</div>
+    <div class="step"><b>5 · ESP32</b><span>Enciende la bomba y la apaga solo</span></div><div class="arrow">→</div>
+    <div class="step"><b>6 · Evento</b><span>El backend confirma el riego</span></div>
+  </div>
+  <div class="grid g2">
+    <div class="card g"><h3>Espera entre riegos</h3><p>Después de cualquier riego, 10 min sin otro automático: el suelo tarda en reflejar el agua y así no se encharca.</p></div>
+    <div class="card c"><h3>Sin confirmación</h3><p>Si no llega el evento en <code>duración + 60 s</code>, la orden expira y queda como fallida.</p></div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="slide">
+  <p class="tag">Seguridad y despliegue</p>
+  <h2>Cuatro capas contra riegos accidentales</h2>
+  <div class="grid g3">
+    <div class="card g"><h3>1 · Nodo</h3><p>Relé apagado al arrancar y en OTA, duración acotada, apagado local y sesión limpia (no riega órdenes viejas).</p></div>
+    <div class="card b"><h3>2 · Backend</h3><p>No solapa órdenes, respeta la espera entre riegos y expira las que no se confirman.</p></div>
+    <div class="card s"><h3>3 · MODO_ESCRITURA</h3><p>En <code>false</code> el backend decide y registra, pero no publica. Solo el desplegado corre en <code>true</code>.</p></div>
+    <div class="card c"><h3>4 · Permisos del broker</h3><p>Las cuentas personales son Subscribe only: HiveMQ rechaza cualquier publish a <code>/comando</code>.</p></div>
+  </div>
+  <div class="card"><h3>Despliegue</h3><p>El backend (Railway/Fly.io) solo necesita salida a internet. Variables: <code>MQTT_HOST/PORT/USER/PASS</code>, <code>MQTT_CLIENT_ID</code>, <code>TOPIC_PREFIX=gda/prod</code>, <code>MODO_ESCRITURA</code>. Solo puede haber <b>un</b> backend con escritura activa sobre <code>gda/prod</code>.</p></div>
+</section>
+
+<div class="nav">
+  <button id="prev">← Anterior</button><span class="cnt" id="cnt"></span><button id="next">Siguiente →</button>
+</div>
+<script>
+const S=[...document.querySelectorAll('.slide')];let i=0;
+function go(n){i=Math.max(0,Math.min(S.length-1,n));S.forEach((s,k)=>s.classList.toggle('on',k===i));
+document.getElementById('cnt').textContent=(i+1)+' / '+S.length;
+document.getElementById('bar').style.width=((i+1)/S.length*100)+'%';
+try{history.replaceState(null,'','#'+(i+1))}catch(e){}}
+document.getElementById('prev').onclick=()=>go(i-1);
+document.getElementById('next').onclick=()=>go(i+1);
+addEventListener('keydown',e=>{if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();go(i+1)}
+if(['ArrowLeft','PageUp'].includes(e.key))go(i-1);if(e.key==='Home')go(0);if(e.key==='End')go(S.length-1)});
+go((parseInt(location.hash.slice(1))||1)-1);
+</script>
+</body>
+</html>

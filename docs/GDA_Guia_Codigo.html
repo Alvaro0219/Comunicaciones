@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GDA — Guía del código</title>
+<meta name="description" content="Guía para entender y defender el backend, el frontend y la base de datos de GDA: cómo funcionan, cómo se comunican y por qué se eligió cada tecnología.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Albert+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --mist: #EFF3EC; --card: #FFFFFF; --ink: #1F2A22; --ink-soft: #55665A; --hair: #D6E0D2;
+  --pine: #24382B; --pine-deep: #1B2B21; --leaf: #3E7C4F; --leaf-bright: #7FC98F; --leaf-tint: #E4EFE3;
+  --water: #2E7DA6; --water-tint: #E2EFF6; --clay: #B0562F; --clay-tint: #F6E9E1; --sun: #C9822B; --sun-tint: #F7ECD9;
+  --display: 'Bricolage Grotesque', 'Albert Sans', system-ui, sans-serif;
+  --body: 'Albert Sans', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; scrollbar-color: #9FB3A4 var(--mist); }
+body { margin: 0; font: 1.0625rem/1.65 var(--body); color: var(--ink); background: var(--mist); -webkit-font-smoothing: antialiased; }
+::selection { background: var(--leaf-bright); color: var(--pine-deep); }
+:focus-visible { outline: 2px solid var(--water); outline-offset: 3px; border-radius: 6px; }
+h1, h2, h3, h4 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: -0.015em; }
+h2 { font-size: clamp(1.9rem, 3vw, 2.5rem); font-weight: 800; line-height: 1.1; }
+h3 { font-size: 1.3rem; font-weight: 800; margin-top: 44px; }
+h4 { font-size: 1.05rem; font-weight: 600; margin-top: 26px; }
+p { margin: 12px 0 0; max-width: 72ch; }
+a { color: var(--leaf); text-underline-offset: 3px; }
+code, .mono { font-family: var(--mono); font-size: 0.86em; }
+code { background: #E6ECE3; padding: 1px 6px; border-radius: 5px; color: var(--pine-deep); }
+.ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+/* Estructura */
+.layout { display: grid; grid-template-columns: 270px minmax(0, 1fr); min-height: 100vh; }
+.toc { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--pine-deep); color: #E9F1E7; padding: 26px 18px; display: flex; flex-direction: column; gap: 18px; }
+.toc-brand { display: flex; align-items: center; gap: 12px; padding: 0 8px; }
+.toc-brand b { font-family: var(--display); font-size: 1.15rem; letter-spacing: 0.04em; display: block; line-height: 1.1; }
+.toc-brand small { font-size: 0.72rem; color: rgba(233, 241, 231, 0.6); }
+.toc-tile { width: 40px; height: 40px; border-radius: 11px; background: rgba(127, 201, 143, 0.14); color: var(--leaf-bright); display: grid; place-items: center; }
+.toc nav { display: flex; flex-direction: column; gap: 2px; }
+.toc a { display: block; text-decoration: none; color: rgba(233, 241, 231, 0.72); padding: 8px 12px; border-radius: 9px; font-size: 0.93rem; font-weight: 500; transition: background-color .15s, color .15s; }
+.toc a:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+.toc a.active { background: rgba(127, 201, 143, 0.16); color: #fff; font-weight: 600; }
+.toc a.sub { padding-left: 26px; font-size: 0.86rem; }
+.toc-hint { margin-top: auto; font-size: 0.78rem; color: rgba(233, 241, 231, 0.55); padding: 0 8px; }
+main { min-width: 0; }
+.wrap { width: min(920px, 100% - 56px); margin-inline: auto; }
+.hero { background: var(--pine); color: #E9F1E7; padding: clamp(44px, 6vw, 80px) 0; }
+.hero h1 { font-size: clamp(2.2rem, 4.6vw, 3.6rem); font-weight: 800; line-height: 1.04; max-width: 18ch; color: #fff; }
+.hero p { color: #C8D6CB; font-size: 1.15rem; margin-top: 18px; }
+section.chapter { padding-block: clamp(44px, 6vw, 72px); border-top: 1px solid var(--hair); }
+section.chapter:first-of-type { border-top: 0; }
+.chapter > .wrap > .lead { color: var(--ink-soft); font-size: 1.12rem; margin-top: 14px; }
+
+/* Tarjetas de ideas clave */
+.keys { list-style: none; margin: 26px 0 0; padding: 0; counter-reset: k; border-top: 1px solid var(--hair); }
+.keys li { counter-increment: k; display: grid; grid-template-columns: 38px 1fr; gap: 14px; padding: 18px 0; border-bottom: 1px solid var(--hair); }
+.keys li::before { content: counter(k); font: 600 0.95rem var(--mono); width: 30px; height: 30px; border-radius: 50%; background: var(--leaf-tint); color: var(--leaf); display: grid; place-items: center; }
+.keys b { display: block; font-family: var(--display); font-size: 1.1rem; }
+.keys span { color: var(--ink-soft); }
+
+/* Tablas */
+.tbl-wrap { overflow-x: auto; margin-top: 18px; border: 1px solid var(--hair); border-radius: 14px; background: var(--card); }
+table { width: 100%; border-collapse: collapse; min-width: 560px; }
+th { text-align: left; font: 600 0.74rem var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-soft); padding: 12px 16px; background: #F6F9F4; border-bottom: 1px solid var(--hair); }
+td { padding: 12px 16px; border-bottom: 1px solid var(--hair); vertical-align: top; font-size: 0.97rem; }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 600; }
+.pill { display: inline-block; font: 600 0.72rem var(--mono); padding: 2px 8px; border-radius: 6px; background: var(--mist); color: var(--ink-soft); }
+.pill.get { background: var(--water-tint); color: #1F5F80; } .pill.post { background: var(--leaf-tint); color: #2D5C3A; }
+.pill.put { background: var(--sun-tint); color: #7A5A18; } .pill.del { background: var(--clay-tint); color: #8A3F20; } .pill.patch { background: #EDE7F6; color: #4C3A86; }
+.role { font-size: 0.82rem; color: var(--ink-soft); }
+
+/* Código */
+pre { margin: 16px 0 0; background: var(--pine-deep); color: #DDEBDB; padding: 16px 18px; border-radius: 12px; overflow-x: auto; font: 0.86rem/1.6 var(--mono); }
+pre .c { color: #8FA896; } pre .k { color: #7FC98F; } pre .s { color: #E6C27A; }
+.cap { font-size: 0.88rem; color: var(--ink-soft); margin: 8px 0 0; }
+
+/* Cuadros de énfasis */
+.note { margin-top: 22px; padding: 16px 20px; border-radius: 12px; background: var(--leaf-tint); color: #24402B; display: grid; grid-template-columns: 26px 1fr; gap: 12px; }
+.note.warn { background: var(--sun-tint); color: #5E4410; }
+.note p { margin: 0; max-width: none; }
+.note b { display: block; font-family: var(--display); }
+
+/* Diagramas */
+.figure { margin-top: 24px; background: var(--card); border: 1px solid var(--hair); border-radius: 16px; padding: 18px; overflow-x: auto; }
+.figure svg { display: block; width: 100%; min-width: 720px; height: auto; }
+.figure .cap { margin-top: 10px; }
+.nodebox { fill: #fff; stroke: #C9D6C5; stroke-width: 1.3; }
+.nodebox.dark { fill: var(--pine); stroke: var(--pine); }
+.t1 { font: 700 15px var(--body); fill: var(--ink); } .t1.w { fill: #fff; }
+.t2 { font: 500 11.5px var(--mono); fill: var(--ink-soft); } .t2.w { fill: #C8D6CB; }
+.lbl { font: 500 11px var(--mono); fill: var(--ink-soft); }
+.ln { fill: none; stroke-width: 2; } .ln.g { stroke: var(--leaf); } .ln.b { stroke: var(--water); } .ln.o { stroke: var(--sun); } .ln.d { stroke: #8FA08F; stroke-dasharray: 5 4; }
+
+/* Desplegables */
+.acc { margin-top: 22px; border-top: 1px solid var(--hair); }
+.acc details { border-bottom: 1px solid var(--hair); }
+.acc summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 1fr 24px; gap: 12px; align-items: center; padding: 16px 0; }
+.acc summary::-webkit-details-marker { display: none; }
+.acc summary b { font-family: var(--display); font-size: 1.12rem; display: block; letter-spacing: -0.01em; }
+.acc summary small { color: var(--ink-soft); font-size: 0.93rem; display: block; margin-top: 1px; }
+.acc summary .chev { color: var(--ink-soft); transition: transform .2s; }
+.acc details[open] summary .chev { transform: rotate(90deg); }
+.acc summary:hover b { color: var(--leaf); }
+.acc .body { padding: 0 0 22px; }
+.acc .body > p:first-child { margin-top: 0; }
+.acc ul { margin: 10px 0 0; padding-left: 20px; } .acc li { margin: 6px 0; }
+.kv { display: grid; grid-template-columns: 130px 1fr; gap: 6px 16px; margin-top: 14px; font-size: 0.96rem; }
+.kv dt { font: 600 0.74rem var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-soft); padding-top: 4px; }
+.kv dd { margin: 0; }
+
+/* Pasos interactivos */
+.stepper { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; margin-top: 24px; align-items: start; }
+.steps { list-style: none; margin: 0; padding: 0; background: var(--card); border: 1px solid var(--hair); border-radius: 14px; overflow: hidden; }
+.steps button { width: 100%; text-align: left; display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; padding: 12px 14px; font: 500 0.93rem/1.35 var(--body); color: var(--ink-soft); background: transparent; border: 0; border-bottom: 1px solid var(--hair); cursor: pointer; }
+.steps li:last-child button { border-bottom: 0; }
+.steps button .n { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--hair); display: grid; place-items: center; font: 600 0.74rem var(--mono); }
+.steps button:hover { background: #F6F9F4; }
+.steps button[aria-current="true"] { background: var(--leaf-tint); color: var(--ink); font-weight: 600; }
+.steps button[aria-current="true"] .n { background: var(--leaf); border-color: var(--leaf); color: #fff; }
+.step-detail { background: var(--card); border: 1px solid var(--hair); border-radius: 14px; padding: 22px; min-height: 300px; }
+.step-detail h4 { margin: 0; font-size: 1.25rem; font-weight: 800; }
+.step-detail .where { display: inline-block; margin-top: 10px; font: 500 0.82rem var(--mono); background: var(--pine-deep); color: #DDEBDB; padding: 4px 10px; border-radius: 7px; }
+.step-detail p { max-width: none; }
+.step-ctrl { display: flex; gap: 8px; margin-top: 18px; }
+.btn { font: 600 0.92rem var(--body); padding: 8px 14px; border-radius: 9px; border: 1px solid var(--hair); background: var(--card); color: var(--ink); cursor: pointer; }
+.btn:hover { background: var(--leaf-tint); } .btn.primary { background: var(--pine); border-color: var(--pine); color: #fff; } .btn.primary:hover { background: var(--pine-deep); }
+
+/* Filtros */
+.filters { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+.filters input, .filters select { font: 500 0.95rem var(--body); padding: 9px 12px; border-radius: 9px; border: 1px solid var(--hair); background: var(--card); color: var(--ink); min-width: 0; }
+.filters input { flex: 1; min-width: 200px; }
+
+/* Tecnologías */
+.tech { padding: 26px 0; border-bottom: 1px solid var(--hair); display: grid; grid-template-columns: 190px 1fr; gap: 10px 28px; }
+.tech:first-of-type { border-top: 1px solid var(--hair); margin-top: 22px; }
+.tech h4 { margin: 0; font-size: 1.2rem; font-weight: 800; }
+.tech .tag { display: block; font: 500 0.78rem var(--mono); color: var(--ink-soft); margin-top: 4px; }
+.tech dl { margin: 0; display: grid; grid-template-columns: 112px 1fr; gap: 8px 16px; }
+.tech dt { font: 600 0.72rem var(--mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-soft); padding-top: 4px; }
+.tech dd { margin: 0; }
+
+.mob-nav { display: none; }
+footer { background: var(--pine-deep); color: #A9BBAD; padding: 28px 0; font-size: 0.93rem; }
+
+@media (max-width: 1000px) {
+  .layout { grid-template-columns: 1fr; }
+  .toc { display: none; }
+  .mob-nav { display: flex; position: sticky; top: 0; z-index: 20; gap: 4px; overflow-x: auto; background: var(--pine-deep); padding: 10px 14px; scrollbar-width: none; }
+  .mob-nav a { color: rgba(233, 241, 231, 0.8); text-decoration: none; white-space: nowrap; padding: 7px 12px; border-radius: 8px; font-size: 0.9rem; font-weight: 500; }
+  .mob-nav a.active { background: rgba(127, 201, 143, 0.16); color: #fff; }
+  .wrap { width: calc(100% - 32px); }
+  .stepper { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  .tech { grid-template-columns: 1fr; }
+  .tech dl { grid-template-columns: 1fr; gap: 2px; }
+  .tech dt { margin-top: 10px; }
+  .kv { grid-template-columns: 1fr; gap: 0; } .kv dt { margin-top: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition-duration: .01ms !important; } }
+@media print { .toc, .mob-nav { display: none !important; } .layout { display: block; } details { display: block; } details > *:not(summary) { display: block !important; } }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-sprout" viewBox="0 0 24 24"><path d="M12 2.8C8.6 7.3 5.8 10.6 5.8 14.1a6.2 6.2 0 0 0 12.4 0C18.2 10.6 15.4 7.3 12 2.8Z"/><path d="M12 17.2v-4m0 0c0-2.1 1.6-3.1 3.2-3.1 0 2.1-1.3 3.1-3.2 3.1Zm0 0c0-2.1-1.6-3.1-3.2-3.1 0 2.1 1.3 3.1 3.2 3.1Z"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 21 19.5H3L12 3.5Z"/><path d="M12 10v4.2M12 17h.01"/></symbol>
+</svg>
+
+<nav class="mob-nav" aria-label="Capítulos">
+  <a href="#vision">Visión</a><a href="#backend">Backend</a><a href="#ciclo">Ciclo</a><a href="#api">API</a><a href="#bd">Base de datos</a><a href="#frontend">Frontend</a><a href="#comunicacion">Comunicación</a><a href="#tecnologias">Tecnologías</a><a href="#defensa">Defensa</a>
+</nav>
+
+<div class="layout">
+<aside class="toc" aria-label="Índice">
+  <div class="toc-brand">
+    <div class="toc-tile"><svg class="ic" style="width:24px;height:24px"><use href="#i-sprout"/></svg></div>
+    <div><b>GDA</b><small>Guía del código</small></div>
+  </div>
+  <nav id="tocNav">
+    <a href="#vision">1. Visión general</a>
+    <a href="#backend">2. Backend</a>
+    <a class="sub" href="#estructura">Estructura</a>
+    <a class="sub" href="#pedido">Un pedido HTTP</a>
+    <a class="sub" href="#servicios">Servicios principales</a>
+    <a href="#ciclo">3. El ciclo de riego</a>
+    <a href="#api">4. API REST y seguridad</a>
+    <a href="#bd">5. Base de datos</a>
+    <a href="#frontend">6. Frontend</a>
+    <a href="#comunicacion">7. Cómo se comunican</a>
+    <a href="#tecnologias">8. Por qué cada tecnología</a>
+    <a href="#defensa">9. Preguntas para la defensa</a>
+    <a href="#limites">10. Límites y mejoras</a>
+  </nav>
+  <p class="toc-hint">Documento interno del equipo. Los nombres de archivos y funciones son los reales del repositorio.</p>
+</aside>
+
+<main>
+<header class="hero">
+  <div class="wrap">
+    <h1>Guía del código de GDA</h1>
+    <p>Cómo funcionan el backend, el frontend y la base de datos, cómo se hablan entre sí y con el broker, y por qué elegimos cada tecnología. Pensada para que cualquiera del grupo pueda explicar el sistema y defender sus decisiones.</p>
+  </div>
+</header>
+
+<!-- ═════════ 1. VISIÓN ═════════ -->
+<section class="chapter" id="vision">
+  <div class="wrap">
+    <h2>1. Visión general</h2>
+    <p class="lead">El sistema son cuatro piezas que se hablan por canales distintos. El backend está en el centro: es el único que conoce a todos.</p>
+
+    <figure class="figure">
+      <svg viewBox="0 0 1000 400" role="img" aria-label="Arquitectura: navegador, API Express, MongoDB, broker MQTT, ESP32, Open-Meteo y correo">
+        <defs>
+          <marker id="ag" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#3E7C4F"/></marker>
+          <marker id="ab" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#2E7DA6"/></marker>
+          <marker id="ao" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#C9822B"/></marker>
+        </defs>
+        <!-- Navegador -->
+        <rect class="nodebox" x="30" y="150" width="190" height="100" rx="14"/><text class="t1" x="52" y="188">Navegador</text><text class="t2" x="52" y="208">Vue 3 · Quasar · Pinia</text><text class="t2" x="52" y="226">carpeta frontend/</text>
+        <!-- API -->
+        <rect class="nodebox dark" x="400" y="130" width="200" height="140" rx="14"/><text class="t1 w" x="424" y="170">API (backend)</text><text class="t2 w" x="424" y="192">Node.js · Express</text><text class="t2 w" x="424" y="210">routes → controllers</text><text class="t2 w" x="424" y="228">→ services → models</text>
+        <!-- Mongo -->
+        <rect class="nodebox" x="400" y="20" width="200" height="76" rx="14"/><text class="t1" x="424" y="54">MongoDB Atlas</text><text class="t2" x="424" y="74">vía Mongoose</text>
+        <!-- Broker -->
+        <rect class="nodebox" x="780" y="150" width="190" height="100" rx="14"/><text class="t1" x="802" y="188">Broker MQTT</text><text class="t2" x="802" y="208">HiveMQ Cloud · TLS 8883</text>
+        <!-- ESP32 -->
+        <rect class="nodebox" x="780" y="300" width="190" height="80" rx="14"/><text class="t1" x="802" y="338">ESP32 (nodo)</text><text class="t2" x="802" y="358">sensores + relé + bomba</text>
+        <!-- Open-Meteo / mail -->
+        <rect class="nodebox" x="400" y="304" width="200" height="76" rx="14"/><text class="t1" x="424" y="338">Open-Meteo y email</text><text class="t2" x="424" y="358">servicios externos</text>
+        <!-- flechas -->
+        <path class="ln g" d="M220 190 L396 190" marker-end="url(#ag)"/><text class="lbl" x="228" y="180">REST (HTTP + JSON)</text>
+        <path class="ln b" d="M396 214 L224 214" marker-end="url(#ab)"/><text class="lbl" x="240" y="236">SSE (tiempo real)</text>
+        <path class="ln g" d="M500 130 L500 100" marker-end="url(#ag)"/><path class="ln g" d="M520 100 L520 130" marker-end="url(#ag)"/><text class="lbl" x="534" y="118">consultas</text>
+        <path class="ln o" d="M776 190 L604 190" marker-end="url(#ao)"/><text class="lbl" x="640" y="180">telemetría</text>
+        <path class="ln b" d="M604 214 L776 214" marker-end="url(#ab)"/><text class="lbl" x="650" y="236">órdenes</text>
+        <path class="ln o" d="M875 300 L875 254" marker-end="url(#ao)"/><path class="ln b" d="M895 254 L895 300" marker-end="url(#ab)"/>
+        <path class="ln d" d="M500 270 L500 300" marker-end="url(#ag)"/><text class="lbl" x="512" y="290">HTTPS · SMTP</text>
+      </svg>
+      <p class="cap">El navegador nunca habla con el broker ni con el nodo: todo pasa por el backend.</p>
+    </figure>
+
+    <h3 style="margin-top:36px">Cinco ideas para tener siempre presentes</h3>
+    <ol class="keys">
+      <li><div><b>El nodo mide y ejecuta; el backend decide.</b><span>El ESP32 no tiene reglas de riego. Envía lo que mide y obedece órdenes. Toda la inteligencia (umbrales, lluvia, esperas) vive en el backend, y se puede cambiar sin tocar el hardware.</span></div></li>
+      <li><div><b>El backend es un cliente MQTT más.</b><span>No hay un broker propio: usamos HiveMQ Cloud. El nodo y el backend se conectan a él desde cualquier red y el broker reparte los mensajes.</span></div></li>
+      <li><div><b>Para pedir, REST; para enterarse, SSE.</b><span>El dashboard pide datos con llamadas HTTP normales y recibe novedades en vivo por una conexión SSE que el backend mantiene abierta. Por eso la pantalla se actualiza sola.</span></div></li>
+      <li><div><b>MongoDB guarda todo, y el historial es la fuente de verdad.</b><span>Lecturas, riegos, alertas y órdenes quedan registrados. Toda decisión, incluso la de no regar, deja un evento.</span></div></li>
+      <li><div><b>El frontend no decide nada de negocio.</b><span>Muestra lo que el backend calcula y manda pedidos. Las reglas de riego, las alertas y los permisos reales se aplican en el servidor.</span></div></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ═════════ 2. BACKEND ═════════ -->
+<section class="chapter" id="backend">
+  <div class="wrap">
+    <h2>2. Backend</h2>
+    <p class="lead">Node.js con Express, organizado en capas. Cada capa tiene una sola responsabilidad, y eso permite seguir cualquier funcionalidad de arriba hacia abajo.</p>
+
+    <h3 id="estructura">Estructura de carpetas</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Carpeta (backend/src)</th><th>Qué contiene</th><th>Ejemplos</th></tr></thead>
+      <tbody>
+        <tr><td>routes/</td><td>Define las URL y encadena los middlewares de cada una. No tiene lógica.</td><td><code>pot.routes.js</code>, <code>auth.routes.js</code></td></tr>
+        <tr><td>middlewares/</td><td>Filtros que se ejecutan antes del controlador: autenticación, roles, validación, límites de uso.</td><td><code>auth.js</code>, <code>validate.js</code>, <code>rateLimit.js</code></td></tr>
+        <tr><td>schemas/</td><td>Reglas de validación de lo que llega en el cuerpo del pedido (Joi).</td><td><code>pot.schemas.js</code></td></tr>
+        <tr><td>controllers/</td><td>Reciben el pedido ya validado, llaman al servicio o al modelo y arman la respuesta. Son finos.</td><td><code>potController.js</code></td></tr>
+        <tr><td>services/</td><td>La lógica de negocio: decidir riegos, procesar telemetría, alertas, clima, emails.</td><td><code>decisionService.js</code>, <code>ingestService.js</code></td></tr>
+        <tr><td>models/</td><td>Esquemas de MongoDB (Mongoose): la forma de los datos guardados.</td><td><code>Pot.js</code>, <code>Reading.js</code></td></tr>
+        <tr><td>mqtt/</td><td>El cliente MQTT: se suscribe a los topics y publica órdenes.</td><td><code>client.js</code></td></tr>
+        <tr><td>realtime/</td><td>El hub SSE que empuja novedades a los navegadores conectados.</td><td><code>sseHub.js</code></td></tr>
+        <tr><td>jobs/</td><td>Tareas programadas que corren solas (cron).</td><td><code>scheduler.js</code></td></tr>
+        <tr><td>config/ y utils/</td><td>Variables de entorno, conexión a la base, y utilidades (respuesta estándar, errores, paginación).</td><td><code>env.js</code>, <code>response.js</code></td></tr>
+      </tbody>
+    </table></div>
+    <div class="note"><svg class="ic"><use href="#i-info"/></svg><div><b>Regla de oro de las capas</b><p>Las rutas llaman a controladores, los controladores a servicios y los servicios a modelos, y nunca al revés. Si hay que explicar «dónde está» algo: la URL está en <em>routes</em>, la regla de negocio en <em>services</em> y la forma del dato en <em>models</em>.</p></div></div>
+
+    <h3 id="arranque">Cómo arranca (app.js)</h3>
+    <p>El archivo <code>app.js</code> arma la aplicación y la pone en marcha. Los middlewares se aplican en este orden, y el orden importa:</p>
+    <ol>
+      <li><b>CORS</b>: solo deja llamar a la API desde los orígenes configurados (el frontend).</li>
+      <li><b>morgan</b> (registro de pedidos), <b>helmet</b> (cabeceras de seguridad) y el lector de JSON.</li>
+      <li><b>Límite global de uso</b> sobre <code>/api</code> (1000 pedidos cada 15 minutos).</li>
+      <li><b>Rutas</b> de la aplicación y, al final, el <b>manejador global de errores</b>.</li>
+    </ol>
+    <p>Después conecta a MongoDB, abre el puerto, conecta el cliente MQTT pasándole dos funciones (<code>handleTelemetry</code> y <code>handleNodeEvent</code>) e inicia las tareas programadas.</p>
+
+    <h3 id="pedido">El recorrido de un pedido HTTP</h3>
+    <p>Todos los endpoints siguen el mismo camino. Ejemplo con «Regar ahora»:</p>
+<pre><span class="c">// routes/pot.routes.js</span>
+router.post(<span class="s">'/:id/irrigate'</span>, irrigationLimiter, authenticate, canManage,
+            validate(irrigateSchema), irrigatePot);</pre>
+    <div class="stepper" style="margin-top:18px" id="reqStepper"></div>
+    <p>Dos detalles que ordenan el código:</p>
+    <ul>
+      <li><b>Los controladores no tienen <code>try/catch</code>.</b> Se envuelven con <code>asyncHandler</code>, que manda cualquier error al manejador global. Así los errores tienen un único formato.</li>
+      <li><b>Toda respuesta tiene el mismo formato:</b> <code>{ success: true, data }</code> o <code>{ success: false, error: { message, code } }</code>. El frontend se apoya en eso.</li>
+    </ul>
+
+    <h3 id="servicios">Servicios principales</h3>
+    <p>Acá está el corazón del sistema. Abrí cada uno para ver qué hace, qué recibe y qué produce.</p>
+    <div class="acc">
+      <details open>
+        <summary><span><b>mqtt/client.js</b><small>La conexión con el broker</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body">
+          <p>Se conecta a HiveMQ por TLS y se suscribe a <code>{prefijo}/+/telemetria</code> y <code>{prefijo}/+/evento</code> (el <code>+</code> significa «cualquier nodo»). Cuando llega un mensaje, saca el <code>nodeId</code> del topic y llama al servicio que corresponda.</p>
+          <dl class="kv">
+            <dt>Entra</dt><dd>Mensajes MQTT del nodo (telemetría y eventos de la bomba).</dd>
+            <dt>Sale</dt><dd>Órdenes de riego publicadas en <code>{prefijo}/{nodeId}/comando</code>.</dd>
+            <dt>Detalle clave</dt><dd>Los mensajes de un mismo nodo se procesan de a uno y en orden (una cola por nodo). Sin eso, el evento de la bomba y la telemetría podrían registrar el mismo riego dos veces.</dd>
+            <dt>Reglas de equipo</dt><dd>Cada persona usa su propio <code>MQTT_CLIENT_ID</code> y su prefijo <code>gda/dev-nombre</code>. Con <code>MODO_ESCRITURA=false</code> el backend nunca publica órdenes: solo el desplegado puede regar la bomba real.</dd>
+          </dl>
+        </div>
+      </details>
+      <details>
+        <summary><span><b>services/ingestService.js</b><small>Procesar cada lectura que llega</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body">
+          <p>Función principal: <code>handleTelemetry(nodeId, mensaje)</code>. Es lo primero que se ejecuta cuando el nodo manda datos.</p>
+          <ul>
+            <li>Busca la zona activa con ese <code>nodeId</code>. Si no existe, descarta el mensaje y avisa en el log.</li>
+            <li>Normaliza el mensaje (acepta los nombres en español del firmware) y valida: la humedad del suelo fuera de 0–100 % deja la lectura como <em>inválida</em>; una temperatura imposible se descarta sola.</li>
+            <li>Guarda la lectura en <code>Reading</code>. Si ya existía (mismo nodo y misma hora), la ignora: así una retransmisión no duplica nada.</li>
+            <li>Actualiza el resumen de la zona (<code>lastReading</code>, <code>online</code>), cierra la alerta de «fallo de sensor» si estaba abierta y avisa a los navegadores por SSE.</li>
+            <li>Si la lectura es válida y tiene menos de 10 minutos, llama al motor de decisión.</li>
+          </ul>
+          <dl class="kv"><dt>Mensaje sin humedad</dt><dd>Se trata como un «latido» de diagnóstico: actualiza señal WiFi, IP y memoria, pero no crea lectura ni decide nada.</dd></dl>
+        </div>
+      </details>
+      <details>
+        <summary><span><b>services/decisionService.js</b><small>El motor de decisión de riego</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body">
+          <p>Función principal: <code>evaluateReading(zona, lectura)</code>. Compara la lectura con los límites de la zona y decide. Las reglas, en orden:</p>
+<pre><span class="c">// resumen de la lógica (no es código literal)</span>
+<span class="k">si</span> humedad &lt; mínimo:
+    <span class="k">si</span> zona exterior <span class="k">y</span> llueve en 6 h:
+        pospone + alerta preventiva
+        <span class="c">// salvo: emergencia (cae 10 puntos bajo el mínimo)</span>
+        <span class="c">//        o espera máxima superada (6 h) → riega igual</span>
+    <span class="k">si no</span>: riega + alerta crítica
+<span class="k">si</span> humedad &gt; máximo: no riega + alerta de exceso
+<span class="k">si</span> temperatura ≥ umbral <span class="k">y</span> humedad &lt; mínimo + 10: alerta de calor + riego breve
+<span class="k">si no</span>: cierra las alertas de humedad que estuvieran abiertas</pre>
+          <ul>
+            <li><b>Espera entre riegos:</b> después de regar espera 10 minutos (<code>DECISION_COOLDOWN_MIN</code>) porque el suelo tarda en reflejar el agua. Sin eso regaría en cada lectura.</li>
+            <li><b>Todo queda registrado:</b> cada decisión crea un <code>Event</code>, incluso «no regar» o «pospuesto».</li>
+            <li><b>Zonas interiores:</b> ignoran el pronóstico de lluvia.</li>
+            <li><b>Lectura del clima:</b> solo del caché; nunca llama a la API externa en medio de una decisión.</li>
+          </ul>
+        </div>
+      </details>
+      <details>
+        <summary><span><b>services/irrigationService.js</b><small>Ordenar, ejecutar y confirmar un riego</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body">
+          <p><code>triggerIrrigation</code> es el <b>único emisor de órdenes</b>: lo usan tanto el motor automático como el botón manual. Así los dos caminos pasan por las mismas protecciones.</p>
+          <ul>
+            <li>No emite si el backend está en modo lectura (deja un evento «riego omitido») ni si ya hay una orden pendiente para esa zona.</li>
+            <li>Crea una <code>IrrigationCommand</code> con un identificador único (<code>commandId</code>) y publica la orden por MQTT.</li>
+            <li><code>handleNodeEvent</code> recibe lo que publica el nodo al encender y al apagar la bomba. <b>Solo ese evento confirma un riego</b>; la telemetría nunca lo hace, porque podría ser anterior a que el nodo reciba la orden.</li>
+            <li>Al confirmar guarda la duración <em>real</em> que reportó el nodo y actualiza «último riego».</li>
+            <li><code>expireStaleCommands</code> (tarea programada) marca como expiradas las órdenes sin confirmación pasada la duración más un margen.</li>
+            <li><code>simulateDemoIrrigation</code>: el riego de las zonas de ejemplo es simulado y no publica nada.</li>
+          </ul>
+        </div>
+      </details>
+      <details>
+        <summary><span><b>services/weatherService.js</b><small>Pronóstico con caché</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body">
+          <p>Consulta Open-Meteo con la latitud y longitud de la zona y guarda el resultado en la colección <code>WeatherCache</code>. La clave es la ubicación redondeada a 2 decimales, así zonas cercanas comparten el mismo pronóstico.</p>
+          <ul>
+            <li><code>getForecast</code> devuelve el caché si tiene menos de 3 horas; si no, consulta la API. Si la API falla, devuelve el último caché disponible.</li>
+            <li><code>rainExpected</code> mira las próximas 6 horas y compara la probabilidad máxima con el umbral de la zona.</li>
+            <li>Una tarea programada refresca todas las ubicaciones cada 3 horas.</li>
+          </ul>
+        </div>
+      </details>
+      <details>
+        <summary><span><b>services/alertService.js y notificationService.js</b><small>Alertas y emails</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body">
+          <ul>
+            <li><code>raiseAlert</code> crea una alerta solo si no hay ya una <em>activa</em> del mismo tipo para esa zona. Esto evita repetir alertas y emails mientras la condición sigue.</li>
+            <li>Si el dueño tiene activado el email y ese tipo de alerta, <code>sendAlertEmail</code> lo envía con Nodemailer. Sin servidor SMTP configurado, solo lo escribe en el log.</li>
+            <li><code>resolveAlerts</code> cierra alertas cuando la condición desaparece, y avisa por SSE.</li>
+          </ul>
+        </div>
+      </details>
+      <details>
+        <summary><span><b>realtime/sseHub.js</b><small>Empujar novedades al navegador</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body">
+          <p>Mantiene la lista de navegadores conectados. <code>broadcast(tipo, datos, dueño)</code> manda un evento a todos los que corresponde: el administrador recibe todo y el resto solo lo de sus propias zonas. Cada 25 segundos manda un «ping» para que ningún intermediario corte la conexión.</p>
+          <p>Eventos que se emiten: <code>reading</code>, <code>event</code>, <code>alert</code>, <code>alert_resolved</code> y <code>pot_status</code>.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span><b>jobs/scheduler.js</b><small>Tareas que corren solas</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body">
+          <ul>
+            <li><b>Cada minuto:</b> <code>checkSensorTimeouts</code> busca zonas sin datos por más de 15 minutos, las marca sin conexión y levanta la alerta de fallo de sensor (las zonas de ejemplo se excluyen).</li>
+            <li><b>Cada minuto:</b> <code>expireStaleCommands</code> expira las órdenes sin confirmar.</li>
+            <li><b>Cada 3 horas:</b> refresca el pronóstico de todas las ubicaciones.</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 3. CICLO ═════════ -->
+<section class="chapter" id="ciclo">
+  <div class="wrap">
+    <h2>3. El ciclo de riego, paso a paso</h2>
+    <p class="lead">Es el camino que cruza casi todo el backend. Si pueden explicar esto con los archivos, entienden el sistema. Hacé clic en cada paso.</p>
+    <div class="stepper" id="cycleStepper"></div>
+    <div class="note"><svg class="ic"><use href="#i-info"/></svg><div><b>Cómo se cierra el círculo</b><p>Cuando el backend recibe el evento del nodo y confirma la orden, emite novedades por SSE. El navegador las recibe y actualiza la tarjeta («Regando…», «Último riego») sin recargar. El riego manual hace el mismo recorrido desde el paso 5, salteando la decisión automática.</p></div></div>
+  </div>
+</section>
+
+<!-- ═════════ 4. API ═════════ -->
+<section class="chapter" id="api">
+  <div class="wrap">
+    <h2>4. API REST y seguridad</h2>
+    <p class="lead">Todos los endpoints cuelgan de <code>/api</code>. Esta tabla se puede filtrar por texto o por rol.</p>
+
+    <div class="filters">
+      <input id="apiSearch" type="search" placeholder="Buscar ruta o descripción (ej.: riego, usuarios)" aria-label="Buscar endpoint">
+      <select id="apiRole" aria-label="Filtrar por rol">
+        <option value="">Todos los roles</option><option value="publico">Público</option><option value="visualizador">Visualizador</option><option value="tecnico">Técnico</option><option value="admin">Administrador</option>
+      </select>
+    </div>
+    <div class="tbl-wrap"><table id="apiTable">
+      <thead><tr><th>Método</th><th>Ruta</th><th>Quién puede</th><th>Qué hace</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p class="cap">«Quién puede» indica el rol mínimo. Los técnicos y visualizadores solo ven y operan sus propias zonas; el administrador ve todo.</p>
+
+    <h3>Cómo se protege</h3>
+    <div class="acc">
+      <details open>
+        <summary><span><b>Autenticación con JWT</b><small>Dos tokens: uno corto y uno de renovación</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body">
+          <ul>
+            <li>Al iniciar sesión, <code>authService</code> verifica la contraseña con bcrypt y entrega un <b>access token</b> (corto, con el rol del usuario) y un <b>refresh token</b> (más largo).</li>
+            <li>Cada pedido lleva <code>Authorization: Bearer &lt;token&gt;</code>. El middleware <code>authenticate</code> lo verifica y deja los datos del usuario en <code>req.user</code>.</li>
+            <li>Cuando el access token vence, el frontend usa el refresh token para pedir uno nuevo, sin que el usuario lo note.</li>
+            <li>Las contraseñas nunca se guardan: se guarda su <em>hash</em> con bcrypt.</li>
+          </ul>
+        </div>
+      </details>
+      <details>
+        <summary><span><b>Roles y alcance por dueño</b><small>Quién puede hacer qué y sobre qué</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body">
+          <ul>
+            <li><code>requireRole(['admin','tecnico'])</code> bloquea el pedido con 403 si el rol no corresponde. El visualizador no puede crear, editar ni regar.</li>
+            <li><code>potScope(req)</code> devuelve el filtro que se agrega a <b>toda</b> consulta sobre zonas: vacío para el administrador y <code>{ ownerId: usuario }</code> para el resto. Así nadie ve ni opera zonas ajenas aunque adivine un identificador.</li>
+          </ul>
+<pre><span class="c">// middlewares/auth.js</span>
+<span class="k">export function</span> potScope(req) {
+  <span class="k">return</span> req.user.role === <span class="s">'admin'</span> ? {} : { ownerId: req.user.sub };
+}</pre>
+        </div>
+      </details>
+      <details>
+        <summary><span><b>Validación y límites de uso</b><small>Se rechaza lo que no cumple antes de llegar al controlador</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body">
+          <ul>
+            <li><b>Joi</b> (carpeta <code>schemas/</code>) define qué campos se aceptan, de qué tipo y en qué rango. <code>validate(schema)</code> descarta campos desconocidos y responde 400 si algo no cumple.</li>
+            <li><b>rate limit:</b> 10 intentos de login cada 15 minutos, 10 órdenes de riego por minuto y 1000 pedidos generales cada 15 minutos.</li>
+            <li><b>helmet</b> agrega cabeceras de seguridad y <b>CORS</b> limita desde qué sitios se puede llamar a la API.</li>
+          </ul>
+        </div>
+      </details>
+      <details>
+        <summary><span><b>Conexión en vivo (SSE) y su token</b><small>Por qué no se usa el mismo token de siempre</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body">
+          <p>El navegador no permite enviar cabeceras en una conexión SSE, así que el token tendría que viajar en la URL. Para no exponer el token de sesión, el frontend pide primero uno <b>efímero</b> (<code>POST /api/stream/token</code>, dura unos 60 segundos y solo sirve para SSE) y lo usa para abrir la conexión. Si se corta, pide otro.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span><b>Secretos y configuración</b><small>Qué nunca está en el repositorio</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body">
+          <p>Contraseñas de la base, del broker, claves de los tokens y del correo viven en el archivo <code>.env</code> (ignorado por git) o en <code>secrets.h</code> del firmware. Solo <code>config/env.js</code> lee las variables de entorno y las valida con Joi; el resto del código importa ese módulo. Se versiona únicamente <code>.env.example</code>, con valores de ejemplo.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 5. BD ═════════ -->
+<section class="chapter" id="bd">
+  <div class="wrap">
+    <h2>5. Base de datos</h2>
+    <p class="lead">MongoDB Atlas, accedida con Mongoose. Hay siete colecciones; una zona (<code>Pot</code>) es el centro y de ella cuelga casi todo.</p>
+
+    <figure class="figure">
+      <svg viewBox="0 0 1000 470" role="img" aria-label="Relaciones entre las colecciones de la base de datos">
+        <defs><marker id="ar" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#7B8B7E"/></marker></defs>
+        <rect class="nodebox" x="30" y="30" width="200" height="86" rx="12"/><text class="t1" x="50" y="62">User</text><text class="t2" x="50" y="82">email · rol · preferencias</text><text class="t2" x="50" y="98">de alertas</text>
+        <rect class="nodebox dark" x="400" y="30" width="200" height="110" rx="12"/><text class="t1 w" x="420" y="62">Pot (zona)</text><text class="t2 w" x="420" y="82">nodeId · límites · especie</text><text class="t2 w" x="420" y="98">lastReading · watering</text><text class="t2 w" x="420" y="114">lastIrrigation · online</text>
+        <rect class="nodebox" x="770" y="30" width="200" height="86" rx="12"/><text class="t1" x="790" y="62">WeatherCache</text><text class="t2" x="790" y="82">pronóstico por ubicación</text><text class="t2" x="790" y="98">(sin relación directa)</text>
+        <rect class="nodebox" x="30" y="260" width="200" height="86" rx="12"/><text class="t1" x="50" y="292">Reading</text><text class="t2" x="50" y="312">humedad · temp · aire</text><text class="t2" x="50" y="328">measuredAt · source</text>
+        <rect class="nodebox" x="290" y="260" width="200" height="86" rx="12"/><text class="t1" x="310" y="292">Event</text><text class="t2" x="310" y="312">decisión o riego</text><text class="t2" x="310" y="328">origen · resultado</text>
+        <rect class="nodebox" x="550" y="260" width="200" height="86" rx="12"/><text class="t1" x="570" y="292">IrrigationCommand</text><text class="t2" x="570" y="312">orden enviada al nodo</text><text class="t2" x="570" y="328">estado · uuid</text>
+        <rect class="nodebox" x="810" y="260" width="160" height="86" rx="12"/><text class="t1" x="830" y="292">Alert</text><text class="t2" x="830" y="312">tipo · estado</text><text class="t2" x="830" y="328">mensaje</text>
+        <path d="M230 73 L396 73" stroke="#7B8B7E" stroke-width="2" fill="none" marker-end="url(#ar)"/><text class="lbl" x="262" y="64">1 usuario → N zonas</text>
+        <path d="M430 140 L150 260" stroke="#7B8B7E" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+        <path d="M470 140 L390 260" stroke="#7B8B7E" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+        <path d="M540 140 L650 260" stroke="#7B8B7E" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+        <path d="M580 140 L860 260" stroke="#7B8B7E" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+        <text class="lbl" x="250" y="190">1 zona → N lecturas, eventos,</text><text class="lbl" x="250" y="206">órdenes y alertas (campo potId)</text>
+        <path d="M490 303 L546 303" stroke="#7B8B7E" stroke-width="2" stroke-dasharray="4 3" fill="none" marker-end="url(#ar)"/><text class="lbl" x="456" y="372">Event ↔ IrrigationCommand: la orden</text><text class="lbl" x="456" y="388">y su evento se referencian entre sí</text>
+        <path d="M600 85 L766 85" stroke="#7B8B7E" stroke-width="2" stroke-dasharray="4 3" fill="none" marker-end="url(#ar)"/><text class="lbl" x="612" y="76">misma ubicación</text>
+      </svg>
+      <p class="cap">Las flechas continuas son referencias por identificador (<code>ref</code> de Mongoose). La zona se une al pronóstico solo por su latitud y longitud.</p>
+    </figure>
+
+    <h3>Qué guarda cada colección</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Colección</th><th>Campos importantes</th><th>Índices y reglas</th></tr></thead>
+      <tbody>
+        <tr><td>User</td><td><code>email</code>, <code>passwordHash</code>, <code>role</code> (admin / técnico / visualizador), <code>alertPrefs</code> (email y tipos de alerta)</td><td><code>email</code> único</td></tr>
+        <tr><td>Pot (zona)</td><td><code>ownerId</code>, <code>nodeId</code>, límites de humedad, duración de riego, umbrales de lluvia y calor, <code>exposure</code> (exterior / interior), <code>species</code>, <code>plants</code>, <code>isDemo</code>, y el <em>estado actual</em>: <code>online</code>, <code>lastReading</code>, <code>watering</code>, <code>lastIrrigation</code>, <code>diagnostics</code></td><td><code>nodeId</code> único. Borrado lógico con <code>isActive</code>.</td></tr>
+        <tr><td>Reading</td><td><code>potId</code>, <code>soilMoisture</code>, <code>temperature</code>, <code>airHumidity</code>, <code>measuredAt</code>, <code>source</code> (en vivo / retransmitida), <code>status</code> (válida / inválida)</td><td>Único por <code>{nodeId, measuredAt}</code>. Índice por <code>{potId, measuredAt}</code>.</td></tr>
+        <tr><td>Event</td><td><code>potId</code>, <code>type</code> (riego activado, pospuesto, no aplicado, por calor, manual), <code>origin</code> (auto / manual), <code>source</code> (backend / nodo), <code>result</code>, <code>message</code>, <code>detail</code></td><td>Índice por <code>{potId, createdAt}</code></td></tr>
+        <tr><td>IrrigationCommand</td><td><code>uuid</code>, <code>durationSec</code>, <code>origin</code>, <code>requestedBy</code>, <code>status</code> (enviada / confirmada / fallida / expirada), <code>sentAt</code>, <code>ackAt</code></td><td><code>uuid</code> único</td></tr>
+        <tr><td>Alert</td><td><code>potId</code>, <code>type</code> (cinco tipos), <code>status</code> (activa / resuelta), <code>message</code>, <code>notified</code></td><td>Índice por <code>{potId, type, status}</code>, el que usa el anti-repetición</td></tr>
+        <tr><td>WeatherCache</td><td><code>key</code> (ubicación a 2 decimales), <code>fetchedAt</code>, pronóstico <code>hourly</code> y <code>daily</code></td><td><code>key</code> único</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Decisiones de diseño que conviene saber explicar</h3>
+    <div class="acc">
+      <details open>
+        <summary><span><b>Por qué el estado actual está dentro de la zona</b><small>lastReading, watering, lastIrrigation</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body"><p>El dashboard necesita mostrar muchas zonas rápido. Si para cada tarjeta hubiera que buscar la última lectura en una colección con miles de documentos, sería lento. Por eso la zona guarda una copia (un «resumen») de su último estado, que se actualiza con cada lectura. El historial completo sigue en <code>Reading</code>.</p></div>
+      </details>
+      <details>
+        <summary><span><b>Idempotencia de las lecturas</b><small>El índice único evita duplicados</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body"><p>El índice único por nodo y hora de medición hace que guardar dos veces la misma lectura sea imposible. Cuando el nodo reenvía lo acumulado tras un corte, MongoDB rechaza las repetidas y el código simplemente las ignora.</p></div>
+      </details>
+      <details>
+        <summary><span><b>Gráfico de 24 horas agregado en la base</b><small>$group y $dateTrunc</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body"><p>Con lecturas cada pocos segundos, pedir «las últimas N» devolvería solo las más recientes. El endpoint <code>/readings/recent</code> agrupa las lecturas en intervalos y devuelve unos 300 puntos que cubren toda la ventana. Cualquier endpoint que sirva series largas al frontend debería hacer lo mismo.</p></div>
+      </details>
+      <details>
+        <summary><span><b>Borrado lógico</b><small>isActive en lugar de borrar</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body"><p>Eliminar una zona primero la desactiva: deja de procesar datos pero conserva el historial. Recién una zona ya desactivada puede eliminarse definitivamente, y ahí se borran también sus lecturas, eventos, alertas y órdenes.</p></div>
+      </details>
+      <details>
+        <summary><span><b>Caché del pronóstico en la base</b><small>WeatherCache</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body"><p>Guardar el pronóstico evita llamar a la API externa en cada decisión y permite seguir funcionando si Open-Meteo no responde. Zonas cercanas comparten el mismo documento.</p></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 6. FRONTEND ═════════ -->
+<section class="chapter" id="frontend">
+  <div class="wrap">
+    <h2>6. Frontend</h2>
+    <p class="lead">Una aplicación de una sola página en Vue 3, con Quasar para los componentes y Pinia para el estado de la sesión. Vive en <code>frontend/</code>.</p>
+
+    <h3>Estructura de carpetas</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Carpeta (frontend/src)</th><th>Qué contiene</th></tr></thead>
+      <tbody>
+        <tr><td>pages/</td><td>Una pantalla por archivo: <code>login</code>, <code>register</code>, <code>dashboard/index</code>, <code>pots</code>, <code>pot-detail</code>, <code>alerts</code>, <code>settings</code> y <code>admin/users</code>.</td></tr>
+        <tr><td>layouts/</td><td><code>DashboardLayout.vue</code>: el menú lateral (escritorio) o la barra inferior (celular) que envuelve las pantallas internas.</td></tr>
+        <tr><td>components/</td><td>Piezas reutilizables: <code>PotCard</code>, <code>PotDialog</code>, <code>AppDialog</code>, <code>ResponsiveTable</code>, <code>MoistureBand</code>, <code>HistoryChart</code>, <code>ForecastStrip</code>, <code>StatusChip</code>, <code>PageHeader</code>, <code>SegmentedControl</code>.</td></tr>
+        <tr><td>services/api.js</td><td>El <b>único</b> lugar que conoce las rutas del backend. Expone una función por endpoint.</td></tr>
+        <tr><td>stores/auth.js</td><td>Estado global de la sesión (Pinia): usuario, tokens y permisos.</td></tr>
+        <tr><td>composables/</td><td>Lógica reutilizable: <code>useRealtimeStream</code> (SSE) y <code>useCrudResource</code> (listar, crear, editar y borrar).</td></tr>
+        <tr><td>router/</td><td>Las rutas de la aplicación y la guarda que protege las pantallas privadas.</td></tr>
+        <tr><td>utils/ y styles/</td><td><code>potState.js</code> (estado visible de una zona) y los estilos con los colores y tipografías del sistema.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Cómo fluye un dato: de la pantalla al backend y de vuelta</h3>
+    <div class="stepper" id="frontStepper"></div>
+
+    <h3>Piezas que conviene saber explicar</h3>
+    <div class="acc">
+      <details open>
+        <summary><span><b>Sesión y renovación automática</b><small>stores/auth.js y el interceptor de Axios</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body">
+          <ul>
+            <li>Al iniciar sesión, los tokens y el usuario se guardan en la tienda de Pinia y en <code>localStorage</code> (clave <code>gda_session</code>), así la sesión sobrevive a recargar la página.</li>
+            <li>Un <b>interceptor</b> de Axios agrega el token a cada pedido. Si el backend responde 401, intenta <b>una sola vez</b> renovar la sesión con el refresh token y repite el pedido. Si falla, cierra la sesión y vuelve al login con el aviso «sesión expirada».</li>
+            <li>El getter <code>canOperate</code> (admin o técnico) decide si se muestran los botones de crear, editar y regar. Es solo comodidad visual: el backend vuelve a validar el permiso.</li>
+          </ul>
+        </div>
+      </details>
+      <details>
+        <summary><span><b>Rutas protegidas</b><small>La guarda del router</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body"><p>Antes de cada cambio de página, la guarda revisa: si la ruta es pública deja pasar; si no hay sesión, manda al login; si la ruta exige un rol (como <code>/dashboard/users</code>, solo administrador) y el usuario no lo tiene, lo manda al dashboard. Las pantallas se cargan de forma diferida (lazy loading), solo cuando se visitan.</p></div>
+      </details>
+      <details>
+        <summary><span><b>Tiempo real con SSE</b><small>composables/useRealtimeStream.js</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body">
+          <ul>
+            <li>Al montar la pantalla pide un token efímero y abre una conexión <code>EventSource</code>.</li>
+            <li>Recibe un objeto con funciones por tipo de evento (<code>reading</code>, <code>event</code>, <code>alert</code>, <code>alert_resolved</code>, <code>pot_status</code>) y llama a la que corresponde con los datos recibidos.</li>
+            <li>Si la conexión se corta, espera 3 segundos, pide un token nuevo y reconecta. Al salir de la pantalla cierra la conexión.</li>
+            <li>El indicador «En vivo» del dashboard refleja el estado de esta conexión.</li>
+          </ul>
+        </div>
+      </details>
+      <details>
+        <summary><span><b>Una sola fuente de verdad del estado de una zona</b><small>utils/potState.js</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body"><p>La función <code>potState</code> convierte los datos de una zona en un estado visible (sin conexión, regando, seca, húmeda, en rango). La usan la tarjeta, la tabla, el detalle y los filtros del dashboard, para que todos muestren lo mismo.</p></div>
+      </details>
+      <details>
+        <summary><span><b>Diseño responsive: tabla en escritorio, tarjetas en celular</b><small>components/ResponsiveTable.vue</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body"><p>Un solo componente recibe las columnas y las filas. En pantallas de 1024 píxeles o más dibuja una tabla; en pantallas menores dibuja una tarjeta por registro, con la primera columna como título. Lo usan las pantallas de Zonas, Usuarios y los tres historiales del detalle.</p></div>
+      </details>
+      <details>
+        <summary><span><b>Formularios y diálogos</b><small>AppDialog y PotDialog</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body"><p><code>AppDialog</code> es la carcasa común de todos los diálogos (encabezado con ícono, cuerpo con scroll y pie con acciones; en celular ocupa toda la pantalla). <code>PotDialog</code> la usa para crear y editar zonas, agrupando los campos en secciones: identificación, humedad deseada (con un deslizador de rango), lluvia, calor y ubicación.</p></div>
+      </details>
+      <details>
+        <summary><span><b>Identidad visual</b><small>Paleta, tipografías y MoistureBand</small></span><svg class="ic chev"><use href="#i-right"/></svg></summary>
+        <div class="body"><p>Los colores y las fuentes se definen una sola vez como variables CSS (<code>--gda-*</code>) en <code>styles/app.css</code>. Quasar toma sus colores de marca de <code>quasar-variables.sass</code>. El componente <code>MoistureBand</code> dibuja la banda de humedad deseada con un marcador que cambia de color según esté seca, en rango o húmeda: es la regla central del sistema hecha visible.</p></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 7. COMUNICACIÓN ═════════ -->
+<section class="chapter" id="comunicacion">
+  <div class="wrap">
+    <h2>7. Cómo se comunican las partes</h2>
+    <p class="lead">Cinco canales, cada uno con su protocolo. Conviene tener claro qué viaja por cada uno.</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Canal</th><th>Protocolo</th><th>Qué viaja</th><th>Dónde está en el código</th></tr></thead>
+      <tbody>
+        <tr><td>Frontend → Backend</td><td>HTTP + JSON (REST)</td><td>Inicio de sesión, configuración de zonas, «Regar ahora», consultas de historial.</td><td><code>services/api.js</code> → <code>routes/</code></td></tr>
+        <tr><td>Backend → Frontend</td><td>SSE (HTTP de una vía, en vivo)</td><td>Lecturas, riegos, alertas y estado de las zonas.</td><td><code>realtime/sseHub.js</code> → <code>useRealtimeStream.js</code></td></tr>
+        <tr><td>Nodo ⇄ Backend</td><td>MQTT sobre TLS, vía HiveMQ</td><td>Telemetría y eventos del nodo hacia el backend; órdenes de riego hacia el nodo.</td><td><code>mqtt/client.js</code> y el firmware</td></tr>
+        <tr><td>Backend ⇄ Base de datos</td><td>Protocolo de MongoDB, vía Mongoose</td><td>Todo lo que se guarda y se consulta.</td><td><code>models/</code> y <code>services/</code></td></tr>
+        <tr><td>Backend → servicios externos</td><td>HTTPS (Open-Meteo) y SMTP (email)</td><td>Pedido de pronóstico; correos de alerta.</td><td><code>weatherService.js</code>, <code>notificationService.js</code></td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>El contrato MQTT</h3>
+    <p>Los topics tienen el formato <code>{prefijo}/{nodeId}/{tipo}</code>. El prefijo separa entornos: <code>gda/prod</code> es solo del nodo real y del backend desplegado, y cada integrante usa el suyo (<code>gda/dev-nombre</code>) para no pisarse.</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Topic</th><th>Dirección</th><th>Mensaje (JSON)</th></tr></thead>
+      <tbody>
+        <tr><td><code>…/telemetria</code></td><td>nodo → backend</td><td><code>{ maceta_id, humedad, temp_ambiente, hum_ambiente, bomba, rssi, ssid, ip, heap }</code></td></tr>
+        <tr><td><code>…/comando</code></td><td>backend → nodo</td><td><code>{ activar_riego: true, duracion_seg: 5, commandId }</code></td></tr>
+        <tr><td><code>…/evento</code></td><td>nodo → backend</td><td><code>{ maceta_id, bomba, humedad, motivo, duracion_seg, commandId }</code>, al encender y al apagar la bomba</td></tr>
+      </tbody>
+    </table></div>
+    <ul>
+      <li>Las suscripciones y las órdenes usan <b>QoS 1</b>: el broker garantiza que el mensaje llega al menos una vez.</li>
+      <li>El <code>commandId</code> viaja en la orden y vuelve en el evento, y así el backend sabe con exactitud qué orden se confirmó.</li>
+      <li>El detalle completo del contrato está en <code>docs/ESP32_CONNECTION_GUIDE.md</code>.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═════════ 8. TECNOLOGÍAS ═════════ -->
+<section class="chapter" id="tecnologias">
+  <div class="wrap">
+    <h2>8. Por qué elegimos cada tecnología</h2>
+    <p class="lead">Para cada una: qué problema resuelve en GDA, qué alternativa existía y qué costo tiene. Defender una tecnología es poder decir también cuáles son sus contras.</p>
+    <div class="note warn"><svg class="ic"><use href="#i-alert"/></svg><div><b>Cómo leer esta sección</b><p>El stack base (Node, Express, MongoDB, Vue, Quasar, Pinia) viene del estándar técnico con el que se arrancó el proyecto; las razones de abajo son los argumentos técnicos por los que encaja con GDA. Si el docente pregunta «por qué», estas son las respuestas.</p></div></div>
+    <div id="techList"></div>
+  </div>
+</section>
+
+<!-- ═════════ 9. DEFENSA ═════════ -->
+<section class="chapter" id="defensa">
+  <div class="wrap">
+    <h2>9. Preguntas para la defensa</h2>
+    <p class="lead">Preguntas probables y respuestas cortas, apoyadas en el código real.</p>
+    <div class="filters"><input id="faqSearch" type="search" placeholder="Buscar en las preguntas (ej.: seguridad, MQTT, duplicados)" aria-label="Buscar pregunta"></div>
+    <div class="acc" id="faqList"></div>
+  </div>
+</section>
+
+<!-- ═════════ 10. LÍMITES ═════════ -->
+<section class="chapter" id="limites">
+  <div class="wrap">
+    <h2>10. Límites actuales y mejoras posibles</h2>
+    <p class="lead">Conviene decirlo nosotros antes de que lo pregunten: es un prototipo, y estos son sus límites conocidos.</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Límite</th><th>Por qué importa</th><th>Mejora posible</th></tr></thead>
+      <tbody>
+        <tr><td>Un solo nodo físico</td><td>La demo usa un nodo real y zonas de ejemplo simuladas.</td><td>Sumar nodos: el backend ya distingue nodos por <code>nodeId</code>.</td></tr>
+        <tr><td>Un sensor de suelo por nodo</td><td>Una zona real tendría varias macetas con varios sensores.</td><td>Varios sensores por nodo y una electroválvula por zona; el contrato de mensajes tendría que identificar zona y sensor.</td></tr>
+        <tr><td>Sensor de suelo sin calibrar</td><td>Los porcentajes no son confiables hasta calibrarlo.</td><td>Calibrar con valores en aire y en agua.</td></tr>
+        <tr><td>Sin tests automáticos unitarios</td><td>Se verifica con scripts propios y a mano.</td><td>Hay <code>npm run e2e</code> (punta a punta con el broker) y <code>npm run test:alertas</code> (40 comprobaciones); falta una suite de tests unitarios.</td></tr>
+        <tr><td>Una sola instancia del backend</td><td>Las tareas programadas y las colas por nodo viven en memoria del proceso.</td><td>Para escalar habría que mover las tareas a un planificador externo y compartir las colas.</td></tr>
+        <tr><td>Los tokens no se pueden revocar</td><td>Un token robado sirve hasta que vence.</td><td>Lista de tokens revocados, o vida más corta del token de acceso.</td></tr>
+        <tr><td>WiFi y distancia</td><td>Sirve para macetas o un vivero chico; un campo requiere otra red.</td><td>LoRa u otra red de largo alcance, y alimentación solar.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">GDA · Guía del código · Proyecto Integrador — Comunicaciones · UTN San Francisco · 2026</div>
+</footer>
+</main>
+</div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  /* ── Pasos interactivos reutilizables ── */
+  function stepper(root, steps) {
+    let i = 0;
+    root.innerHTML = `<ol class="steps">${steps.map((s, k) => `<li><button type="button" data-i="${k}"><span class="n">${k + 1}</span><span>${esc(s.title)}</span></button></li>`).join('')}</ol><div class="step-detail" aria-live="polite"></div>`;
+    const detail = $('.step-detail', root);
+    function render() {
+      const s = steps[i];
+      $$('button', root).forEach((b, k) => b.setAttribute('aria-current', String(k === i)));
+      detail.innerHTML = `<h4>${esc(s.title)}</h4>${s.where ? `<span class="where">${esc(s.where)}</span>` : ''}${s.html}
+        <div class="step-ctrl"><button type="button" class="btn" data-go="-1" ${i === 0 ? 'disabled' : ''}>Anterior</button><button type="button" class="btn primary" data-go="1" ${i === steps.length - 1 ? 'disabled' : ''}>Siguiente</button></div>`;
+    }
+    root.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      if (b.dataset.i) i = Number(b.dataset.i);
+      else if (b.dataset.go) i = Math.max(0, Math.min(steps.length - 1, i + Number(b.dataset.go)));
+      else return;
+      render();
+    });
+    render();
+  }
+
+  stepper($('#reqStepper'), [
+    { title: 'La ruta recibe el pedido', where: 'routes/pot.routes.js', html: '<p>Express encuentra la ruta <code>POST /api/pots/:id/irrigate</code> y ejecuta, en orden, la lista de funciones que la acompaña. Si una de ellas responde con un error, el pedido se corta ahí y las siguientes no se ejecutan.</p>' },
+    { title: 'Límite de uso', where: 'middlewares/rateLimit.js → irrigationLimiter', html: '<p>Cuenta los pedidos de riego. Más de 10 en un minuto se rechazan con el código <code>RATE_LIMITED</code>. Evita que un clic repetido o un script llene al nodo de órdenes.</p>' },
+    { title: 'Autenticación', where: 'middlewares/auth.js → authenticate', html: '<p>Lee la cabecera <code>Authorization: Bearer …</code>, verifica el token JWT y deja los datos del usuario (id y rol) en <code>req.user</code>. Sin token válido responde 401.</p>' },
+    { title: 'Autorización por rol', where: 'middlewares/auth.js → requireRole', html: '<p><code>canManage</code> es <code>requireRole([\'admin\',\'tecnico\'])</code>. Un visualizador recibe 403: no puede regar.</p>' },
+    { title: 'Validación del cuerpo', where: 'middlewares/validate.js + schemas/pot.schemas.js', html: '<p>Joi comprueba el cuerpo (por ejemplo, que <code>durationSec</code> esté entre 1 y 600), descarta campos desconocidos y deja el resultado limpio en <code>req.validated</code>. Si algo no cumple, responde 400.</p>' },
+    { title: 'El controlador', where: 'controllers/potController.js → irrigatePot', html: '<p>Busca la zona con <code>findAccessiblePot</code>, que aplica <code>potScope</code> (nadie opera zonas ajenas). Comprueba que esté activa y conectada, y llama a <code>triggerIrrigation</code>. Convierte los casos especiales en errores claros (nodo sin conexión, modo lectura, riego en curso).</p>' },
+    { title: 'La respuesta', where: 'utils/response.js → ok()', html: '<p>Responde <code>202 { success: true, data: { command, event } }</code>. 202 significa «aceptado»: la orden salió, pero la confirmación del nodo llega más tarde, por MQTT, y se refleja en pantalla por SSE.</p>' }
+  ]);
+
+  stepper($('#cycleStepper'), [
+    { title: 'El nodo mide y publica', where: 'firmware gda-nodo-v2 → topic …/telemetria', html: '<p>Cada 30 segundos (en pruebas) el ESP32 lee el sensor de suelo y el de aire y publica un mensaje JSON con la humedad, temperatura, estado de la bomba y datos de diagnóstico.</p>' },
+    { title: 'El backend lo recibe', where: 'mqtt/client.js', html: '<p>El cliente MQTT, suscripto a <code>{prefijo}/+/telemetria</code>, recibe el mensaje, saca el <code>nodeId</code> del topic y lo mete en la cola de ese nodo. Los mensajes de un mismo nodo se procesan de a uno, en orden.</p>' },
+    { title: 'Se valida y se guarda', where: 'services/ingestService.js → handleTelemetry', html: '<p>Busca la zona, normaliza y valida el mensaje, y guarda la lectura (los duplicados los rechaza el índice único). Actualiza el resumen de la zona, cierra la alerta de fallo de sensor si había una y emite <code>reading</code> por SSE.</p>' },
+    { title: 'Se evalúa si hay que regar', where: 'services/decisionService.js → evaluateReading', html: '<p>Si la lectura es válida y reciente, compara la humedad con los límites de la zona. Si está seca, mira el pronóstico guardado (<code>weatherService</code>) y las reglas de lluvia, emergencia y espera. Cada decisión crea un <code>Event</code> y puede levantar una alerta (<code>alertService</code>, que además manda el email).</p>' },
+    { title: 'Se ordena el riego', where: 'services/irrigationService.js → triggerIrrigation', html: '<p>Comprueba que no esté en modo lectura ni haya otra orden pendiente. Crea la <code>IrrigationCommand</code> con su <code>commandId</code> y un evento pendiente, y publica en <code>{prefijo}/{nodeId}/comando</code>: <code>{ activar_riego: true, duracion_seg, commandId }</code>. Emite el evento y «regando» por SSE.</p>' },
+    { title: 'El nodo ejecuta y avisa', where: 'firmware → topic …/evento', html: '<p>El nodo enciende la bomba, mide el tiempo él mismo (con tope de 120 s) y la apaga. Publica un evento al encender y otro al apagar, con la duración real y el <code>commandId</code> recibido.</p>' },
+    { title: 'Se confirma el riego', where: 'services/irrigationService.js → handleNodeEvent → finishCommand', html: '<p>Con el evento de apagado, la orden pasa a <em>confirmada</em>, el evento a <em>confirmado</em> y la zona guarda su «último riego» con la duración real. Si la orden no se confirma en el tiempo previsto, <code>expireStaleCommands</code> la marca como expirada y el riego como fallido.</p>' },
+    { title: 'La pantalla se actualiza sola', where: 'realtime/sseHub.js → useRealtimeStream.js', html: '<p>El backend emite <code>event</code> y <code>pot_status</code>; el navegador los recibe por la conexión SSE y actualiza la tarjeta («Regando…», «Último riego») y el historial, sin recargar la página.</p>' }
+  ]);
+
+  stepper($('#frontStepper'), [
+    { title: 'La pantalla pide datos', where: 'pages/*.vue', html: '<p>Cuando una pantalla se monta, llama a una función de <code>services/api.js</code>, como <code>fetchPots()</code>. Las pantallas <b>nunca</b> usan Axios directamente ni conocen las URL.</p>' },
+    { title: 'api.js arma el pedido', where: 'services/api.js', html: '<p>Cada función sabe la ruta, el método y los parámetros de un endpoint. Axios lo envía y, gracias al interceptor, agrega el token. Si el token venció, lo renueva y repite el pedido.</p>' },
+    { title: 'Se normaliza la respuesta', where: 'services/api.js → unwrap()', html: '<p>Como todas las respuestas tienen el formato <code>{ success, data }</code>, <code>unwrap</code> devuelve el <code>data</code> si salió bien, o lanza un <code>ApiError</code> con mensaje y código si no. Las pantallas muestran el mensaje en una notificación.</p>' },
+    { title: 'La pantalla guarda y muestra', where: 'pages/dashboard/index.vue', html: '<p>El resultado se guarda en una referencia reactiva (<code>ref</code>); Vue redibuja lo que dependa de ella. Los filtros y el resumen son valores calculados (<code>computed</code>) a partir de esa lista.</p>' },
+    { title: 'Llegan novedades en vivo', where: 'composables/useRealtimeStream.js', html: '<p>La misma pantalla se suscribe al flujo SSE. Cada evento actualiza solo el dato afectado (por ejemplo, la humedad de una zona) sin volver a pedir toda la lista.</p>' },
+    { title: 'El usuario actúa', where: 'components/ y pages/', html: '<p>Cuando el usuario guarda un formulario o toca «Regar ahora», la pantalla llama de nuevo a <code>api.js</code> y el ciclo vuelve a empezar. En las pantallas de listado, <code>useCrudResource</code> se encarga de crear, editar, borrar y recargar.</p>' }
+  ]);
+
+  /* ── Tabla de endpoints ── */
+  const API = [
+    ['post', '/auth/register', 'publico', 'Crea una cuenta (rol técnico). Máx. 10 intentos / 15 min.'],
+    ['post', '/auth/login', 'publico', 'Inicia sesión y entrega access y refresh token.'],
+    ['post', '/auth/refresh', 'publico', 'Renueva la sesión con el refresh token.'],
+    ['get', '/pots', 'visualizador', 'Lista las zonas del usuario (todas, si es administrador), con su cantidad de alertas activas.'],
+    ['post', '/pots', 'tecnico', 'Crea una zona.'],
+    ['get', '/pots/:id', 'visualizador', 'Detalle de una zona.'],
+    ['put', '/pots/:id', 'tecnico', 'Edita una zona (límites, especie, lluvia, ubicación…).'],
+    ['del', '/pots/:id', 'tecnico', 'Desactiva la zona; con ?permanent=true y ya desactivada, la elimina con todo su historial.'],
+    ['post', '/pots/:id/irrigate', 'tecnico', 'Riego manual. Máx. 10 por minuto.'],
+    ['get', '/pots/:id/readings', 'visualizador', 'Lecturas con paginación y filtro por fechas.'],
+    ['get', '/pots/:id/readings/recent', 'visualizador', 'Serie de las últimas horas agregada en ~300 puntos (gráfico de 24 h).'],
+    ['get', '/pots/:id/events', 'visualizador', 'Eventos de riego y decisiones, con filtro por fechas.'],
+    ['get', '/pots/:id/weather', 'visualizador', 'Pronóstico (por hora y a 5 días) de la ubicación de la zona.'],
+    ['get', '/alerts', 'visualizador', 'Alertas, filtrables por estado, zona y fechas.'],
+    ['patch', '/alerts/:id/resolve', 'tecnico', 'Resuelve una alerta a mano.'],
+    ['get', '/users/me', 'visualizador', 'Datos y preferencias del usuario actual.'],
+    ['put', '/users/me/preferences', 'visualizador', 'Guarda las preferencias de alertas (email y tipos).'],
+    ['get', '/users', 'admin', 'Lista los usuarios.'],
+    ['post', '/users', 'admin', 'Crea un usuario con el rol elegido.'],
+    ['put', '/users/:id', 'admin', 'Edita un usuario (nombre, rol, estado, contraseña).'],
+    ['post', '/stream/token', 'visualizador', 'Entrega el token efímero para abrir la conexión SSE.'],
+    ['get', '/stream?token=…', 'visualizador', 'Abre la conexión SSE (con el token efímero).']
+  ];
+  const ROLE_LABEL = { publico: 'Público', visualizador: 'Cualquier usuario', tecnico: 'Técnico o admin', admin: 'Solo admin' };
+  const ROLE_RANK = { publico: 0, visualizador: 1, tecnico: 2, admin: 3 };
+  const METHOD = { get: 'GET', post: 'POST', put: 'PUT', del: 'DELETE', patch: 'PATCH' };
+  function renderApi() {
+    const q = $('#apiSearch').value.trim().toLowerCase();
+    const role = $('#apiRole').value;
+    const rows = API.filter(([, path, r, desc]) => {
+      if (q && !`${path} ${desc}`.toLowerCase().includes(q)) return false;
+      // "puede usar" = el rol elegido cumple el mínimo exigido por el endpoint
+      if (role && ROLE_RANK[role] < ROLE_RANK[r]) return false;
+      return true;
+    });
+    $('#apiTable tbody').innerHTML = rows.length
+      ? rows.map(([m, path, r, desc]) => `<tr><td><span class="pill ${m}">${METHOD[m]}</span></td><td><code>/api${esc(path)}</code></td><td class="role">${ROLE_LABEL[r]}</td><td>${esc(desc)}</td></tr>`).join('')
+      : '<tr><td colspan="4" style="color:var(--ink-soft)">Ningún endpoint coincide con la búsqueda.</td></tr>';
+  }
+  $('#apiSearch').addEventListener('input', renderApi);
+  $('#apiRole').addEventListener('change', renderApi);
+  renderApi();
+
+  /* ── Tecnologías ── */
+  const TECH = [
+    ['Node.js + Express', 'Backend', 'Un mismo lenguaje (JavaScript) en servidor y en pantalla, así cualquiera del grupo puede leer y modificar las dos partes. Su modelo asíncrono atiende bien muchas conexiones a la vez (mensajes MQTT, conexiones SSE, pedidos HTTP) con pocos recursos. Express es mínimo y deja la estructura en nuestras manos (capas routes → controllers → services).', 'Python con Django o Flask; Java con Spring.', 'Un solo hilo para trabajo de cálculo pesado. No aplica acá: el trabajo es de entrada y salida y las cuentas son simples.'],
+    ['MongoDB Atlas + Mongoose', 'Base de datos', 'Los documentos JSON se parecen a los mensajes que ya manejamos (telemetría, eventos, diagnóstico), así que se guardan sin traducir. El esquema flexible permite sumar campos (como <code>exposure</code> o <code>plants</code>) sin migraciones. Atlas ofrece un plan gratuito en la nube. Mongoose agrega esquemas, validaciones, índices y relaciones entre colecciones.', 'PostgreSQL (con TimescaleDB para series) o InfluxDB.', 'No hay uniones nativas como en SQL (se usa <code>populate</code> y consultas separadas). Para series de tiempo enormes habría que evaluar una base especializada.'],
+    ['MQTT + HiveMQ Cloud', 'Comunicación con el nodo', 'MQTT es un protocolo liviano de publicar y suscribirse, pensado para dispositivos pequeños. Desacopla: el nodo y el backend no necesitan conocerse ni estar en la misma red. Los topics (<code>…/{nodeId}/…</code>) identifican cada nodo y los niveles de calidad de servicio evitan perder mensajes. HiveMQ Cloud es un broker ya montado, con TLS y usuarios con permisos, y evita mantener un servidor propio con un puerto abierto.', 'HTTP (el nodo consulta al servidor cada tanto o le envía pedidos); WebSocket; un broker propio como Mosquitto.', 'Con HTTP el nodo tendría que preguntar si hay órdenes (consumo y demora). Un broker propio exige servidor y seguridad. Dependemos de un servicio externo y de los límites de su plan gratuito.'],
+    ['SSE (Server-Sent Events)', 'Tiempo real hacia el navegador', 'El dashboard solo necesita <em>recibir</em> novedades del servidor; lo que envía lo hace con pedidos REST. SSE es exactamente eso: una conexión HTTP de una sola vía, con reconexión automática en el navegador y sin librerías extra.', 'WebSocket; consultar al servidor cada pocos segundos (polling).', 'No es bidireccional (no hace falta), y no permite cabeceras, por eso usamos un token efímero. El polling gastaría pedidos y mostraría datos con demora.'],
+    ['JWT + bcrypt', 'Autenticación', 'El token JWT lleva el usuario y el rol, y el servidor lo verifica sin consultar la base en cada pedido. Un token de acceso corto y otro de renovación equilibran seguridad y comodidad. bcrypt guarda las contraseñas con <em>hash</em> y sal: ni nosotros podemos leerlas.', 'Sesiones en el servidor con cookies.', 'Un JWT emitido no se puede revocar antes de vencer. Se mitiga con vida corta del token de acceso.'],
+    ['Joi, helmet, CORS y rate limit', 'Seguridad de la API', 'Joi valida lo que entra con reglas declarativas y claras (rangos, tipos) antes de que toque la lógica. helmet agrega cabeceras de seguridad; CORS limita quién puede llamar a la API; el límite de uso frena abusos y fuerza bruta en el login.', 'Validar a mano en cada controlador.', 'Son defensas básicas, no un sistema de seguridad completo.'],
+    ['node-cron', 'Tareas programadas', 'Corre dentro del mismo proceso las tareas periódicas: detectar nodos sin datos, expirar órdenes y refrescar el pronóstico. Evita montar un servicio aparte para algo tan simple.', 'Un planificador externo (por ejemplo, el del sistema operativo o un servicio de la nube).', 'Si se levantaran varias instancias del backend, las tareas se ejecutarían duplicadas.'],
+    ['Open-Meteo', 'Pronóstico del clima', 'Es gratuito, no pide clave de API y entrega probabilidad de lluvia por hora y pronóstico a varios días para cualquier coordenada. Es todo lo que el motor de decisión necesita.', 'OpenWeatherMap u otras APIs con clave y límites.', 'Es una dependencia externa: por eso se cachea y, si falla, se usa el último pronóstico guardado.'],
+    ['Nodemailer', 'Emails de alerta', 'Habla SMTP estándar, así que funciona con cualquier proveedor de correo y no nos ata a uno. Sin servidor configurado, las alertas se registran en el log para poder desarrollar sin enviar correos.', 'Servicios de envío con su propia API.', 'Hay que configurar un servidor SMTP real para que los correos salgan.'],
+    ['Vue 3', 'Frontend', 'Reactividad simple: cuando cambia un dato, la pantalla se redibuja sola, justo lo que necesita un dashboard en tiempo real. La sintaxis <code>&lt;script setup&gt;</code> es corta y legible, con curva de aprendizaje suave para el grupo.', 'React o Angular.', 'Ecosistema algo más chico que el de React.'],
+    ['Quasar', 'Componentes de interfaz', 'Trae tablas, diálogos, formularios, deslizadores y notificaciones ya hechos y responsive, y se tematiza con variables. Permitió construir el dashboard rápido y dedicar el tiempo a las reglas de negocio.', 'Vuetify, o hacer los componentes a mano con CSS.', 'Es un framework grande: para lograr nuestra identidad visual hubo que sobrescribir varios estilos propios.'],
+    ['Pinia + Vue Router', 'Estado y navegación', 'Pinia es la tienda de estado oficial de Vue y alcanza para lo único realmente global: la sesión. El resto del estado vive en cada pantalla. Vue Router da rutas, carga diferida y guardas por rol.', 'Vuex (reemplazado por Pinia).', 'No hay un estado global de zonas: cada pantalla las pide cuando las necesita.'],
+    ['Vite', 'Herramienta de desarrollo', 'Arranca al instante y recarga los cambios en caliente, y compila el proyecto para producción de forma rápida.', 'Webpack o Vue CLI.', 'Las variables <code>VITE_*</code> se fijan al compilar: cambiarlas exige volver a compilar.'],
+    ['Chart.js + Axios', 'Gráficos y pedidos HTTP', 'Chart.js es liviano y suficiente para el gráfico de 24 horas con dos ejes. Axios facilita lo que necesitamos: interceptores para agregar el token y renovar la sesión automáticamente.', 'D3 o ECharts; la función <code>fetch</code> del navegador.', 'Chart.js no lee las variables CSS, así que sus colores se copiaron a mano y hay que mantenerlos sincronizados.']
+  ];
+  $('#techList').innerHTML = TECH.map(([name, tag, why, alt, con]) => `
+    <div class="tech">
+      <div><h4>${esc(name)}</h4><span class="tag">${esc(tag)}</span></div>
+      <dl>
+        <dt>Por qué</dt><dd>${why}</dd>
+        <dt>Alternativa</dt><dd>${esc(alt)}</dd>
+        <dt>Contras</dt><dd>${con}</dd>
+      </dl>
+    </div>`).join('');
+
+  /* ── Preguntas para la defensa ── */
+  const FAQ = [
+    ['¿Por qué el backend decide el riego y no el ESP32?', 'Porque así las reglas (umbrales, lluvia, esperas) se pueden cambiar o corregir sin volver a cargar el hardware, y el backend tiene acceso al pronóstico, a la historia y a la configuración de cada zona. El nodo solo mide y ejecuta, y eso lo hace simple y barato. Es el principio de diseño del sistema.'],
+    ['¿Qué pasa si se cae el WiFi mientras la bomba está regando?', 'El nodo mide el tiempo él mismo y apaga la bomba cuando se cumple, sin depender de la conexión. Además nunca riega más de 120 segundos por orden. Al reconectar, informa lo que ocurrió.'],
+    ['¿Cómo evitan regar dos veces seguido?', 'Hay tres protecciones: solo puede haber una orden pendiente por zona, después de un riego hay una espera de 10 minutos antes del siguiente riego automático (porque el suelo tarda en reflejar el agua), y las decisiones repetidas no generan eventos repetidos. El riego manual no respeta la espera, pero sí la orden única.'],
+    ['¿Cómo saben que el riego realmente ocurrió?', 'Solo lo confirma el evento que publica el propio nodo al apagar la bomba, con el <code>commandId</code> de la orden. La telemetría nunca confirma: podría ser anterior a que el nodo reciba la orden. Si no llega confirmación en el tiempo previsto, la orden se marca expirada y el riego como fallido.'],
+    ['¿Cómo evitan guardar lecturas duplicadas cuando el nodo reenvía?', 'Hay un índice único en la base por nodo y hora de medición. Al reenviar, MongoDB rechaza las que ya existen y el servicio las ignora. Además cada lectura queda marcada como «en vivo» o «retransmitida».'],
+    ['¿Cómo se actualiza el dashboard sin recargar?', 'El navegador abre una conexión SSE con el backend. Cada vez que llega una lectura, se confirma un riego o salta una alerta, el backend emite un evento y la pantalla actualiza solo ese dato. Si la conexión se corta, reconecta sola en 3 segundos.'],
+    ['¿Por qué SSE y no WebSocket?', 'Porque el dashboard solo necesita recibir novedades; lo que envía va por REST. SSE es más simple (HTTP común, reconexión automática, sin librerías) y alcanza. WebSocket sería útil si el navegador tuviera que enviar mensajes continuos al servidor.'],
+    ['¿Por qué MQTT y no HTTP para hablar con el nodo?', 'MQTT es liviano y pensado para microcontroladores, y permite que el backend le mande órdenes al nodo cuando quiera sin que el nodo tenga que preguntar. Con HTTP el nodo tendría que consultar constantemente, gastando energía y con demora. Además el broker desacopla las partes: no necesitan estar en la misma red.'],
+    ['¿Cómo protegen la API?', 'Autenticación con JWT (acceso corto más renovación), roles que se verifican en el servidor, filtro por dueño en toda consulta de zonas, validación de entrada con Joi, límites de uso, cabeceras de seguridad con helmet y CORS con orígenes explícitos. Las contraseñas se guardan con hash bcrypt.'],
+    ['¿Un usuario puede ver las zonas de otro?', 'No. Toda consulta sobre zonas (y sobre lo que cuelga de ellas) lleva el filtro <code>potScope</code>: solo el administrador ve todo; los demás únicamente las suyas. Aunque alguien adivine un identificador, el servidor responde «no encontrado».'],
+    ['¿Dónde guardan los secretos?', 'En el archivo <code>.env</code> del backend y en <code>secrets.h</code> del firmware, ambos fuera de git. Solo se versionan los archivos de ejemplo. El código lee las variables únicamente desde <code>config/env.js</code>, que las valida.'],
+    ['¿Qué pasa si Open-Meteo no responde?', 'El motor de decisión nunca llama a la API en el momento: usa el pronóstico guardado en la base (se refresca cada 3 horas). Si la API falla, se sigue usando el último guardado. Si una zona no tiene ubicación, simplemente no considera la lluvia.'],
+    ['¿Por qué MongoDB y no una base SQL?', 'Los datos que manejamos son documentos parecidos a los mensajes que llegan del nodo, el esquema evoluciona (agregamos campos sin migrar) y las consultas son casi todas «por zona y por fecha», que los índices resuelven bien. SQL sería una buena opción también; lo que perdemos son las uniones nativas, que no necesitamos mucho.'],
+    ['¿Cómo prueban el sistema?', 'Con un simulador de nodo que habla el mismo contrato MQTT, un script de punta a punta contra el broker (<code>npm run e2e</code>), un script que verifica los cinco tipos de alerta y su comportamiento (<code>npm run test:alertas</code>) y pruebas manuales con el nodo real. Lo que falta es una suite de tests unitarios.'],
+    ['¿Qué es el modo lectura?', 'Es una protección de equipo: con <code>MODO_ESCRITURA=false</code> el backend evalúa y registra lo que haría, pero no publica órdenes. Así varios integrantes pueden correr el backend en sus computadoras sin que dos de ellos rieguen la bomba real a la vez; solo el backend desplegado corre con escritura activa.'],
+    ['¿Qué pasaría con muchos nodos?', 'El backend ya distingue nodos por su identificador y procesa los mensajes de cada uno en su propia cola, así que sumar nodos no requiere cambios de lógica. Los límites estarían en el plan del broker, en que hoy hay una sola instancia del backend, y en que las tareas programadas viven en ese proceso. Para escalar habría que revisar esas tres cosas.'],
+    ['¿Por qué las zonas de ejemplo? ¿No es engañoso?', 'Son datos de demostración, rotulados como tal en pantalla («Zona de ejemplo»), que permiten mostrar cómo se vería un vivero con varias zonas sin tener todos los nodos armados. Su riego manual es simulado y no activa ninguna bomba. El nodo real es el único que mide y riega de verdad.']
+  ];
+  function renderFaq() {
+    const q = $('#faqSearch').value.trim().toLowerCase();
+    const items = FAQ.filter(([a, b]) => !q || `${a} ${b}`.toLowerCase().includes(q));
+    $('#faqList').innerHTML = items.length
+      ? items.map(([a, b]) => `<details><summary><span><b>${a}</b></span><svg class="ic chev"><use href="#i-right"/></svg></summary><div class="body"><p>${b}</p></div></details>`).join('')
+      : '<p style="color:var(--ink-soft)">Ninguna pregunta coincide con la búsqueda.</p>';
+  }
+  $('#faqSearch').addEventListener('input', renderFaq);
+  renderFaq();
+
+  /* ── Índice: capítulo activo ── */
+  const links = $$('#tocNav a, .mob-nav a');
+  const targets = $$('section.chapter');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((en) => {
+      if (!en.isIntersecting) return;
+      const id = en.target.id;
+      links.forEach((a) => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  targets.forEach((t) => io.observe(t));
+})();
+</script>
+</body>
+</html>

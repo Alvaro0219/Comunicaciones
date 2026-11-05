@@ -1,0 +1,578 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Conexiones Nodo 1 GDA</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: hoja técnica de una columna; el diagrama de cableado es la pieza central, el resto son tablas de referencia. */
+:root{
+  --bg:#f2f5f3; --panel:#ffffff; --fg:#17201c; --muted:#56635d; --line:#d3dbd7;
+  --pcb:#1f6f52; --pcb-ink:#eaf4ef; --accent:#a8642a; --accent-soft:#f3e6d9;
+  --warn:#9a3b1f; --warn-soft:#f7e3dc; --ok:#256b45; --ok-soft:#dff0e6;
+  --case:#55615b;
+  --w-white:#f7f7f2; --w-black:#1b1b1b; --w-yellow:#f2c230; --w-green:#2f9e57;
+  --w-red:#d6392f; --w-brown:#7a4a2b; --w-orange:#f08a24;
+  --display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --body:"Public Sans","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1412; --panel:#151d1a; --fg:#e4ebe7; --muted:#97a69f; --line:#28332e;
+  --pcb:#1d6b4f; --pcb-ink:#e4f2eb; --accent:#e29a5a; --accent-soft:#2e2219;
+  --warn:#f08a68; --warn-soft:#2f1c16; --ok:#6fcf98; --ok-soft:#16281e;
+  --case:#c3cec8; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1412; --panel:#151d1a; --fg:#e4ebe7; --muted:#97a69f; --line:#28332e;
+  --pcb:#1d6b4f; --pcb-ink:#e4f2eb; --accent:#e29a5a; --accent-soft:#2e2219;
+  --warn:#f08a68; --warn-soft:#2f1c16; --ok:#6fcf98; --ok-soft:#16281e;
+  --case:#c3cec8; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 72px}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{font-family:var(--display);font-stretch:85%;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(2rem,5vw,3.1rem);font-weight:800;letter-spacing:-.01em}
+h2{font-size:1.6rem;font-weight:750}
+h3{font-size:1.15rem;font-weight:700}
+p{margin:0;max-width:68ch}
+code,.mono{font-family:var(--mono);font-size:.88em}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+header{display:flex;flex-direction:column;gap:16px;border-bottom:2px solid var(--fg);padding-bottom:28px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 24px;font-family:var(--mono);font-size:.82rem;color:var(--muted)}
+.meta b{color:var(--fg);font-weight:600}
+section{display:flex;flex-direction:column;gap:18px}
+.lead{color:var(--muted)}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.comp{font-weight:600;white-space:nowrap}
+td.pin{font-family:var(--mono);font-weight:600;white-space:nowrap}
+.wire{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.sw{width:22px;height:8px;border-radius:4px;border:1.5px solid var(--case);flex:none}
+.tag{display:inline-block;font-family:var(--mono);font-size:.72rem;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}
+.tag.nc{background:var(--line);color:var(--muted)}
+figure{margin:0;display:flex;flex-direction:column;gap:10px}
+figure .scroll{padding:12px}
+figure svg{display:block;width:100%;min-width:760px;height:auto}
+figure.small svg{min-width:560px;max-width:760px;margin:0 auto}
+figcaption{font-size:.85rem;color:var(--muted)}
+svg text{font-family:var(--mono)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.card li{max-width:62ch}
+.callout{border-left:4px solid var(--warn);background:var(--warn-soft);padding:14px 18px;border-radius:0 6px 6px 0;display:flex;flex-direction:column;gap:6px}
+.callout strong{color:var(--warn)}
+pre{margin:0;font-family:var(--mono);font-size:.82rem;line-height:1.55;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px;overflow-x:auto}
+ol.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
+ol.steps li{max-width:68ch}
+footer{font-size:.82rem;color:var(--muted);border-top:1px solid var(--line);padding-top:18px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Gemelo Digital Agrícola · UTN FR San Francisco · Comunicaciones</span>
+  <h1>Conexiones del Nodo 1</h1>
+  <p class="lead">Cableado definitivo del nodo ESP32 que mide la maceta y ejecuta las órdenes de riego del backend. Refleja el armado que quedó funcionando el 28/10/2026, después de resolver el problema del relé.</p>
+  <div class="meta">
+    <span>Placa <b>ESP32 DevKit 38 pines (ESP-WROOM-32)</b></span>
+    <span>Firmware <b>gda-nodo-v2.ino · v2.5</b></span>
+    <span>Nodo <b>nodo1 · gda-nodo1</b></span>
+    <span>Topics <b>gda/prod/nodo1/…</b></span>
+  </div>
+</header>
+
+<section>
+  <h2>Tabla de conexiones</h2>
+  <p class="lead">Una fila por cable. Los positivos de los tres componentes salen del riel de <b>3V3</b> (columna + derecha del protoboard).</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Componente</th><th>Pata</th><th>Va a</th><th>Cable</th><th>Nota</th></tr></thead>
+    <tbody>
+      <tr><td class="comp">FC-28 · suelo</td><td class="pin">VCC</td><td class="pin">3V3</td><td><span class="wire"><span class="sw" style="background:var(--w-red)"></span>Rojo</span></td><td>Nunca a 5 V: la salida A0 superaría los 3,3 V del ADC.</td></tr>
+      <tr><td class="comp"></td><td class="pin">GND</td><td class="pin">GND</td><td><span class="wire"><span class="sw" style="background:var(--w-black)"></span>Negro</span></td><td></td></tr>
+      <tr><td class="comp"></td><td class="pin">A0</td><td class="pin">GPIO 34</td><td><span class="wire"><span class="sw" style="background:var(--w-green)"></span>Verde</span></td><td>Solo entrada, ADC1: sigue leyendo con WiFi activo.</td></tr>
+      <tr><td class="comp"></td><td class="pin">D0</td><td class="pin">—</td><td><span class="tag nc">sin conectar</span></td><td>El potenciómetro azul solo regula D0; no afecta la medición.</td></tr>
+      <tr><td class="comp"></td><td class="pin">Horquilla</td><td class="pin">Módulo (2 pines)</td><td><span class="wire"><span class="sw" style="background:#2f6fd0"></span>Azul / <span class="sw" style="background:var(--w-green)"></span>Verde</span></td><td>La sonda va al módulo comparador (MH-Sensor-Series), que está pinchado en el protoboard. No tiene polaridad.</td></tr>
+      <tr><td class="comp">AM2302 · aire</td><td class="pin">VCC (+)</td><td class="pin">3V3</td><td><span class="wire"><span class="sw" style="background:var(--w-red)"></span>Rojo</span></td><td></td></tr>
+      <tr><td class="comp"></td><td class="pin">DATA</td><td class="pin">GPIO 15</td><td><span class="wire"><span class="sw" style="background:var(--w-yellow)"></span>Amarillo</span></td><td>Pin de arranque: si la placa no bootea o no carga, desconectarlo durante la carga o pasarlo a GPIO 4.</td></tr>
+      <tr><td class="comp"></td><td class="pin">GND (−)</td><td class="pin">GND</td><td><span class="wire"><span class="sw" style="background:var(--w-brown)"></span>Marrón</span></td><td>Es el sensor suelto de 4 patas; la 3.ª pata no se usa. Si las lecturas fallan, agregar 10 kΩ entre VCC y DATA.</td></tr>
+      <tr><td class="comp">Relé HW-307 (JQC3F-05VDC-C)</td><td class="pin">VCC</td><td class="pin">3V3 (riel derecho)</td><td><span class="wire"><span class="sw" style="background:var(--w-red)"></span>Rojo</span></td><td><span class="tag warn">no a 5 V</span> Con 5 V el HIGH del ESP32 no lo apaga.</td></tr>
+      <tr><td class="comp"></td><td class="pin">GND</td><td class="pin">GND</td><td><span class="wire"><span class="sw" style="background:var(--w-brown)"></span>Marrón</span></td><td>Tierra común con el ESP32.</td></tr>
+      <tr><td class="comp"></td><td class="pin">IN</td><td class="pin">GPIO 27</td><td><span class="wire"><span class="sw" style="background:var(--w-orange)"></span>Naranja</span></td><td>Antes estaba en GPIO 26; se movió al 27.</td></tr>
+      <tr><td class="comp">Bomba</td><td class="pin">+ / −</td><td class="pin">Bornes del relé + pilas</td><td><span class="wire"><span class="sw" style="background:var(--w-red)"></span>Rojo / <span class="sw" style="background:var(--w-black)"></span>Negro</span></td><td>No toca el ESP32. Ver «Circuito de la bomba».</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>Diagrama de cableado</h2>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 920 650" role="img" aria-label="Diagrama de cableado del ESP32 con el sensor FC-28, el relé y el sensor AM2302">
+      <defs>
+        <style>
+          .case{fill:none;stroke:var(--case);stroke-width:6.5;stroke-linecap:round;stroke-linejoin:round}
+          .core{fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+          .rail{stroke-width:7;stroke-linecap:round}
+          .box{fill:var(--panel);stroke:var(--fg);stroke-width:1.5}
+          .t{fill:var(--fg);font-size:12px}
+          .tm{fill:var(--muted);font-size:11px}
+          .th{fill:var(--fg);font-size:13px;font-weight:600}
+          .pl{fill:var(--pcb-ink);font-size:11px}
+          .pu{fill:var(--accent);font-size:11.5px;font-weight:600}
+          .dot{fill:var(--fg)}
+        </style>
+      </defs>
+
+      <!-- Rieles -->
+      <text class="tm" x="236" y="24">Riel + 3V3 (columna derecha del protoboard)</text>
+      <line class="rail" x1="236" y1="36" x2="690" y2="36" style="stroke:var(--w-red);opacity:.35"/>
+      <text class="tm" x="256" y="640">Riel − GND</text>
+      <line class="rail" x1="256" y1="612" x2="670" y2="612" style="stroke:var(--case);opacity:.45"/>
+
+      <!-- ESP32 -->
+      <rect x="370" y="76" width="180" height="490" rx="8" style="fill:var(--pcb)"/>
+      <rect x="405" y="84" width="110" height="40" rx="3" style="fill:var(--pcb-ink);opacity:.18"/>
+      <text class="pl" x="460" y="108" text-anchor="middle">ESP-WROOM-32</text>
+      <rect x="440" y="560" width="40" height="16" rx="3" style="fill:var(--case)"/>
+      <text class="tm" x="460" y="594" text-anchor="middle">USB</text>
+
+      <!-- Pines izquierda -->
+      <g>
+        <text class="pu" x="382" y="108">3V3</text>
+        <text class="pl" x="382" y="132">EN</text>
+        <text class="pl" x="382" y="156">VP</text>
+        <text class="pl" x="382" y="180">VN</text>
+        <text class="pu" x="382" y="204">34</text>
+        <text class="pl" x="382" y="228">35</text>
+        <text class="pl" x="382" y="252">32</text>
+        <text class="pl" x="382" y="276">33</text>
+        <text class="pl" x="382" y="300">25</text>
+        <text class="pl" x="382" y="324">26</text>
+        <text class="pu" x="382" y="348">27</text>
+        <text class="pl" x="382" y="372">14</text>
+        <text class="pl" x="382" y="396">12</text>
+        <text class="pu" x="382" y="420">GND</text>
+        <text class="pl" x="382" y="444">13</text>
+        <text class="pl" x="382" y="468">D2</text>
+        <text class="pl" x="382" y="492">D3</text>
+        <text class="pl" x="382" y="516">CMD</text>
+        <text class="pl" x="382" y="540">5V</text>
+      </g>
+      <!-- Pines derecha -->
+      <g text-anchor="end">
+        <text class="pl" x="538" y="108">GND</text>
+        <text class="pl" x="538" y="132">23</text>
+        <text class="pl" x="538" y="156">22</text>
+        <text class="pl" x="538" y="180">TX</text>
+        <text class="pl" x="538" y="204">RX</text>
+        <text class="pl" x="538" y="228">21</text>
+        <text class="pl" x="538" y="252">GND</text>
+        <text class="pl" x="538" y="276">19</text>
+        <text class="pl" x="538" y="300">18</text>
+        <text class="pl" x="538" y="324">5</text>
+        <text class="pl" x="538" y="348">17</text>
+        <text class="pl" x="538" y="372">16</text>
+        <text class="pl" x="538" y="396">4</text>
+        <text class="pl" x="538" y="420">0</text>
+        <text class="pl" x="538" y="444">2</text>
+        <text class="pu" x="538" y="468">15</text>
+        <text class="pl" x="538" y="492">D1</text>
+        <text class="pl" x="538" y="516">D0</text>
+        <text class="pl" x="538" y="540">CLK</text>
+      </g>
+
+      <!-- FC-28 -->
+      <rect class="box" x="40" y="146" width="190" height="122" rx="6"/>
+      <text class="th" x="54" y="168">FC-28</text>
+      <text class="tm" x="54" y="186">humedad de suelo</text>
+      <text class="t" x="220" y="180" text-anchor="end">VCC</text>
+      <text class="t" x="220" y="204" text-anchor="end">GND</text>
+      <text class="t" x="220" y="228" text-anchor="end">A0</text>
+      <text class="tm" x="220" y="252" text-anchor="end">D0 (sin usar)</text>
+
+      <!-- Relé -->
+      <rect class="box" x="40" y="318" width="190" height="136" rx="6"/>
+      <text class="th" x="54" y="340">Relé</text>
+      <text class="tm" x="54" y="358">JQC3F-05VDC-C</text>
+      <text class="tm" x="54" y="376">activo en bajo</text>
+      <text class="tm" x="54" y="438">bornes → bomba</text>
+      <text class="t" x="220" y="354" text-anchor="end">VCC</text>
+      <text class="t" x="220" y="384" text-anchor="end">GND</text>
+      <text class="t" x="220" y="414" text-anchor="end">IN</text>
+
+      <!-- AM2302 -->
+      <rect class="box" x="690" y="414" width="190" height="96" rx="6"/>
+      <text class="th" x="790" y="440">AM2302</text>
+      <text class="tm" x="790" y="458">temp. y humedad</text>
+      <text class="tm" x="790" y="474">del aire</text>
+      <text class="t" x="700" y="444">VCC</text>
+      <text class="t" x="700" y="468">DATA</text>
+      <text class="t" x="700" y="492">GND</text>
+
+      <!-- Cables: casing + core -->
+      <!-- ESP 3V3 al riel -->
+      <path class="case" d="M370 104 H340 V36"/><path class="core" style="stroke:var(--w-white)" d="M370 104 H340 V36"/>
+      <!-- ESP GND al riel -->
+      <path class="case" d="M370 416 H330 V612"/><path class="core" style="stroke:var(--w-black)" d="M370 416 H330 V612"/>
+      <!-- FC-28 -->
+      <path class="case" d="M230 176 H262 V36"/><path class="core" style="stroke:var(--w-red)" d="M230 176 H262 V36"/>
+      <path class="case" d="M230 200 H276 V612"/><path class="core" style="stroke:var(--w-black)" d="M230 200 H276 V612"/>
+      <path class="case" d="M230 224 H300 V200 H370"/><path class="core" style="stroke:var(--w-green)" d="M230 224 H300 V200 H370"/>
+      <!-- Relé -->
+      <path class="case" d="M230 350 H248 V36"/><path class="core" style="stroke:var(--w-red)" d="M230 350 H248 V36"/>
+      <path class="case" d="M230 380 H290 V612"/><path class="core" style="stroke:var(--w-brown)" d="M230 380 H290 V612"/>
+      <path class="case" d="M230 410 H316 V344 H370"/><path class="core" style="stroke:var(--w-orange)" d="M230 410 H316 V344 H370"/>
+      <!-- AM2302 -->
+      <path class="case" d="M690 440 H660 V36"/><path class="core" style="stroke:var(--w-red)" d="M690 440 H660 V36"/>
+      <path class="case" d="M690 464 H550"/><path class="core" style="stroke:var(--w-yellow)" d="M690 464 H550"/>
+      <path class="case" d="M690 488 H640 V612"/><path class="core" style="stroke:var(--w-brown)" d="M690 488 H640 V612"/>
+
+      <!-- Uniones con rieles -->
+      <circle class="dot" cx="248" cy="36" r="4"/><circle class="dot" cx="262" cy="36" r="4"/>
+      <circle class="dot" cx="340" cy="36" r="4"/><circle class="dot" cx="660" cy="36" r="4"/>
+      <circle class="dot" cx="276" cy="612" r="4"/><circle class="dot" cx="290" cy="612" r="4"/>
+      <circle class="dot" cx="330" cy="612" r="4"/><circle class="dot" cx="640" cy="612" r="4"/>
+    </svg>
+    </div>
+    <figcaption>Vista con la antena arriba y el USB abajo. Los pines usados están resaltados. El orden de pines corresponde al DevKit de 38 pines; si la placa es otra variante, guiarse por lo impreso en la serigrafía.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Protoboard</h2>
+  <p class="lead">Vista desde arriba con la numeración del protoboard: filas 1 a 64 de izquierda a derecha, columnas a–j y los cuatro rieles. Los componentes van del lado <b>f–j</b> y el ESP32 cruza el canal central.</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 1060 430" role="img" aria-label="Vista del protoboard con el ESP32 en las filas 46 a 64, el AM2302 en f19 a f22 y el módulo de suelo en f30 a f33">
+      <defs>
+        <pattern id="hole" x="42.5" y="1.5" width="15" height="15" patternUnits="userSpaceOnUse">
+          <rect x="5" y="5" width="5" height="5" rx="1" style="fill:var(--line)"/>
+        </pattern>
+        <style>
+          .bcase{fill:none;stroke:var(--case);stroke-width:5.5;stroke-linecap:round;stroke-linejoin:round}
+          .bcore{fill:none;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+          .bl{fill:var(--muted);font-size:10px}
+          .bt{fill:var(--fg);font-size:11px}
+          .bpin{fill:var(--pcb-ink);font-size:9px;font-weight:600}
+          .end{fill:var(--fg)}
+        </style>
+      </defs>
+
+      <!-- Placa -->
+      <rect x="30" y="18" width="986" height="282" rx="8" style="fill:var(--panel);stroke:var(--line)"/>
+      <line x1="42" y1="28" x2="1004" y2="28" style="stroke:#2f6fd0;stroke-width:1.5;opacity:.6"/>
+      <line x1="42" y1="64" x2="1004" y2="64" style="stroke:var(--w-red);stroke-width:1.5;opacity:.6"/>
+      <line x1="42" y1="254" x2="1004" y2="254" style="stroke:#2f6fd0;stroke-width:1.5;opacity:.6"/>
+      <line x1="42" y1="290" x2="1004" y2="290" style="stroke:var(--w-red);stroke-width:1.5;opacity:.6"/>
+      <rect x="42.5" y="31.5" width="960" height="30" style="fill:url(#hole)"/>
+      <rect x="42.5" y="76.5" width="960" height="75" style="fill:url(#hole)"/>
+      <rect x="42.5" y="166.5" width="960" height="75" style="fill:url(#hole)"/>
+      <rect x="42.5" y="256.5" width="960" height="30" style="fill:url(#hole)"/>
+      <rect x="42" y="153" width="962" height="12" style="fill:var(--bg)"/>
+
+      <!-- Etiquetas de columnas y rieles -->
+      <g text-anchor="end">
+        <text class="bl" x="26" y="43">− GND</text><text class="bl" x="26" y="58">+ 3V3</text>
+        <text class="bl" x="26" y="88">j</text><text class="bl" x="26" y="103">i</text><text class="bl" x="26" y="118">h</text><text class="bl" x="26" y="133">g</text><text class="bl" x="26" y="148">f</text>
+        <text class="bl" x="26" y="178">e</text><text class="bl" x="26" y="193">d</text><text class="bl" x="26" y="208">c</text><text class="bl" x="26" y="223">b</text><text class="bl" x="26" y="238">a</text>
+        <text class="bl" x="26" y="268">− GND</text><text class="bl" x="26" y="283">+ 5V</text>
+      </g>
+      <g text-anchor="middle">
+        <text class="bl" x="50" y="316">1</text><text class="bl" x="110" y="316">5</text><text class="bl" x="185" y="316">10</text>
+        <text class="bl" x="260" y="316">15</text><text class="bl" x="335" y="316">20</text><text class="bl" x="410" y="316">25</text>
+        <text class="bl" x="485" y="316">30</text><text class="bl" x="560" y="316">35</text><text class="bl" x="635" y="316">40</text>
+        <text class="bl" x="710" y="316">45</text><text class="bl" x="785" y="316">50</text><text class="bl" x="860" y="316">55</text>
+        <text class="bl" x="935" y="316">60</text><text class="bl" x="995" y="316">64</text>
+      </g>
+
+      <!-- ESP32: filas 46 a 64, pines en b e i -->
+      <rect x="716" y="90" width="288" height="138" rx="6" style="fill:var(--pcb);opacity:.95"/>
+      <rect x="724" y="118" width="54" height="82" rx="3" style="fill:var(--pcb-ink);opacity:.15"/>
+      <text class="bpin" x="751" y="163" text-anchor="middle">ANT</text>
+      <rect x="1004" y="151" width="14" height="16" rx="2" style="fill:var(--case)"/>
+      <text class="bt" x="860" y="164" text-anchor="middle" style="fill:var(--pcb-ink)">ESP32 · filas 46–64</text>
+      <g text-anchor="middle">
+        <text class="bpin" x="725" y="210">3V3</text>
+        <text class="bpin" x="785" y="210">34</text>
+        <text class="bpin" x="875" y="210">27</text>
+        <text class="bpin" x="920" y="210">GND</text>
+        <text class="bpin" x="995" y="210">5V</text>
+        <text class="bpin" x="725" y="114">GND</text>
+        <text class="bpin" x="950" y="114">15</text>
+      </g>
+
+      <!-- AM2302: f19 a f22 -->
+      <rect x="311" y="104" width="63" height="48" rx="4" style="fill:#f4f4ef;stroke:var(--case)"/>
+      <text x="342" y="126" text-anchor="middle" style="fill:#3a3f3c;font-size:9px;font-weight:600">AM2302</text>
+      <text x="342" y="139" text-anchor="middle" style="fill:#3a3f3c;font-size:8px">f19–f22</text>
+
+      <!-- Módulo de suelo: f30 a f33 -->
+      <rect x="476" y="104" width="63" height="48" rx="4" style="fill:#2b5fb8;stroke:var(--case)"/>
+      <text x="507" y="126" text-anchor="middle" style="fill:#ffffff;font-size:9px;font-weight:600">SUELO</text>
+      <text x="507" y="139" text-anchor="middle" style="fill:#ffffff;font-size:8px">f30–f33</text>
+
+      <!-- Relé (fuera del protoboard) -->
+      <rect x="60" y="342" width="170" height="64" rx="5" style="fill:var(--panel);stroke:var(--fg)"/>
+      <text class="bt" x="74" y="364" style="font-weight:600">Relé HW-307</text>
+      <text class="bl" x="74" y="380">VCC · GND · IN</text>
+      <text class="bl" x="74" y="396">fuera del protoboard</text>
+
+      <!-- Cables -->
+      <!-- AM2302 -->
+      <path class="bcase" d="M320 84 C320 68 260 70 260 54"/><path class="bcore" style="stroke:var(--w-red)" d="M320 84 C320 68 260 70 260 54"/>
+      <path class="bcase" d="M365 84 C365 58 320 60 320 39"/><path class="bcore" style="stroke:var(--w-brown)" d="M365 84 C365 58 320 60 320 39"/>
+      <path class="bcase" d="M335 84 C335 -16 950 -16 950 84"/><path class="bcore" style="stroke:var(--w-yellow)" d="M335 84 C335 -16 950 -16 950 84"/>
+      <!-- Módulo de suelo -->
+      <path class="bcase" d="M530 84 V54"/><path class="bcore" style="stroke:var(--w-red)" d="M530 84 V54"/>
+      <path class="bcase" d="M515 84 V39"/><path class="bcore" style="stroke:var(--w-black)" d="M515 84 V39"/>
+      <path class="bcase" d="M485 84 C620 84 660 234 785 234"/><path class="bcore" style="stroke:var(--w-green)" d="M485 84 C620 84 660 234 785 234"/>
+      <!-- Alimentación del ESP32 a los rieles -->
+      <path class="bcase" d="M725 234 C660 200 700 20 980 54"/><path class="bcore" style="stroke:var(--w-white)" d="M725 234 C660 200 700 20 980 54"/>
+      <path class="bcase" d="M725 84 C770 30 960 22 995 39"/><path class="bcore" style="stroke:var(--w-black)" d="M725 84 C770 30 960 22 995 39"/>
+      <path class="bcase" d="M995 234 V279"/><path class="bcore" style="stroke:var(--w-white)" d="M995 234 V279"/>
+      <!-- Puente entre los dos rieles GND (fila 1) -->
+      <path class="bcase" d="M50 264 C36 200 36 100 50 39"/><path class="bcore" style="stroke:var(--w-brown)" d="M50 264 C36 200 36 100 50 39"/>
+      <!-- Relé -->
+      <path class="bcase" d="M190 342 C190 250 172 140 170 54"/><path class="bcore" style="stroke:var(--w-red)" d="M190 342 C190 250 172 140 170 54"/>
+      <path class="bcase" d="M206 342 C206 250 186 120 170 39"/><path class="bcore" style="stroke:var(--w-brown)" d="M206 342 C206 250 186 120 170 39"/>
+      <path class="bcase" d="M222 360 C420 380 860 330 875 234"/><path class="bcore" style="stroke:var(--w-orange)" d="M222 360 C420 380 860 330 875 234"/>
+
+      <!-- Puntas -->
+      <g>
+        <circle class="end" cx="320" cy="84" r="3"/><circle class="end" cx="335" cy="84" r="3"/><circle class="end" cx="365" cy="84" r="3"/>
+        <circle class="end" cx="485" cy="84" r="3"/><circle class="end" cx="515" cy="84" r="3"/><circle class="end" cx="530" cy="84" r="3"/>
+        <circle class="end" cx="950" cy="84" r="3"/>
+        <circle class="end" cx="785" cy="234" r="3"/><circle class="end" cx="875" cy="234" r="3"/><circle class="end" cx="725" cy="234" r="3"/><circle class="end" cx="995" cy="234" r="3"/><circle class="end" cx="725" cy="84" r="3"/><circle class="end" cx="995" cy="39" r="3"/>
+        <circle class="end" cx="320" cy="39" r="3"/><circle class="end" cx="515" cy="39" r="3"/><circle class="end" cx="170" cy="39" r="3"/><circle class="end" cx="50" cy="39" r="3"/>
+        <circle class="end" cx="260" cy="54" r="3"/><circle class="end" cx="530" cy="54" r="3"/><circle class="end" cx="980" cy="54" r="3"/><circle class="end" cx="170" cy="54" r="3"/>
+        <circle class="end" cx="50" cy="264" r="3"/><circle class="end" cx="995" cy="279" r="3"/>
+      </g>
+    </svg>
+    </div>
+    <figcaption>Del lado de la columna j, el riel + (3V3) es el más cercano a la columna y el − (GND) el de afuera. Del lado de la a, el − queda junto a la columna y el + (5V) afuera. Los dos rieles − están unidos por el puente marrón de la fila 1. Los cables de los componentes están dibujados en la columna j, pero sirve cualquier agujero libre de g a j de esa fila.</figcaption>
+  </figure>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Ubicación</th><th>Qué hay</th><th>Cable</th><th>Va a</th></tr></thead>
+    <tbody>
+      <tr><td class="pin">f19</td><td>AM2302 · VCC</td><td><span class="wire"><span class="sw" style="background:var(--w-red)"></span>Rojo</span></td><td>Riel + 3V3 (lado j), fila 15</td></tr>
+      <tr><td class="pin">f20</td><td>AM2302 · DATA</td><td><span class="wire"><span class="sw" style="background:var(--w-yellow)"></span>Amarillo</span></td><td class="pin">j61 · GPIO 15</td></tr>
+      <tr><td class="pin">f21</td><td>AM2302 · sin uso</td><td><span class="tag nc">sin conectar</span></td><td>—</td></tr>
+      <tr><td class="pin">f22</td><td>AM2302 · GND</td><td><span class="wire"><span class="sw" style="background:var(--w-brown)"></span>Marrón</span></td><td>Riel − GND (lado j), fila 19</td></tr>
+      <tr><td class="pin">f30</td><td>Módulo de suelo · A0</td><td><span class="wire"><span class="sw" style="background:var(--w-green)"></span>Verde</span></td><td class="pin">a50 · GPIO 34</td></tr>
+      <tr><td class="pin">f31</td><td>Módulo de suelo · D0</td><td><span class="tag nc">sin conectar</span></td><td>—</td></tr>
+      <tr><td class="pin">f32</td><td>Módulo de suelo · GND</td><td><span class="wire"><span class="sw" style="background:var(--w-black)"></span>Negro</span></td><td>Riel − GND (lado j)</td></tr>
+      <tr><td class="pin">f33</td><td>Módulo de suelo · VCC</td><td><span class="wire"><span class="sw" style="background:var(--w-red)"></span>Rojo</span></td><td>Riel + 3V3 (lado j)</td></tr>
+      <tr><td class="pin">b46–b64</td><td>ESP32, lado de 3V3 · 34 · 27 · GND · 5V</td><td>—</td><td>Columna a libre</td></tr>
+      <tr><td class="pin">i46–i64</td><td>ESP32, lado de GND · 15</td><td>—</td><td>Columna j libre</td></tr>
+      <tr><td class="pin">a46</td><td>ESP32 · 3V3</td><td><span class="wire"><span class="sw" style="background:var(--w-white)"></span>Blanco</span></td><td>Riel + 3V3 (lado j), anteúltimo agujero</td></tr>
+      <tr><td class="pin">j46</td><td>ESP32 · GND</td><td><span class="wire"><span class="sw" style="background:var(--w-black)"></span>Negro</span></td><td>Riel − GND (lado j), último agujero</td></tr>
+      <tr><td class="pin">a56</td><td>ESP32 · GPIO 27</td><td><span class="wire"><span class="sw" style="background:var(--w-orange)"></span>Naranja</span></td><td>IN del relé</td></tr>
+      <tr><td class="pin">a64</td><td>ESP32 · 5V</td><td><span class="wire"><span class="sw" style="background:var(--w-white)"></span>Blanco</span></td><td>Riel + 5V (lado a), último agujero</td></tr>
+      <tr><td class="pin">+ 3V3 · fila 9</td><td>Relé · VCC</td><td><span class="wire"><span class="sw" style="background:var(--w-red)"></span>Rojo</span></td><td>VCC del relé</td></tr>
+      <tr><td class="pin">− GND · fila 9</td><td>Relé · GND</td><td><span class="wire"><span class="sw" style="background:var(--w-brown)"></span>Marrón</span></td><td>GND del relé</td></tr>
+      <tr><td class="pin">Fila 1</td><td>Puente entre rieles −</td><td><span class="wire"><span class="sw" style="background:var(--w-brown)"></span>Marrón</span></td><td>Une el − del lado a con el − del lado j</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>Circuito de la bomba</h2>
+  <p class="lead">La bomba se alimenta con su caja de pilas y el relé solo abre o cierra el positivo. Ningún cable de este circuito va al ESP32.</p>
+  <figure class="small">
+    <div class="scroll">
+    <svg viewBox="0 0 640 220" role="img" aria-label="Circuito de la bomba: pila positiva al borne COM, borne NO a la bomba, negativo directo">
+      <defs>
+        <style>
+          .case2{fill:none;stroke:var(--case);stroke-width:6.5;stroke-linecap:round;stroke-linejoin:round}
+          .core2{fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+          .box2{fill:var(--panel);stroke:var(--fg);stroke-width:1.5}
+          .t2{fill:var(--fg);font-size:12px}
+          .m2{fill:var(--muted);font-size:11px}
+          .h2s{fill:var(--fg);font-size:13px;font-weight:600}
+        </style>
+      </defs>
+      <rect class="box2" x="20" y="56" width="150" height="104" rx="6"/>
+      <text class="h2s" x="34" y="80">Caja de pilas</text>
+      <text class="t2" x="160" y="104" text-anchor="end">+</text>
+      <text class="t2" x="160" y="146" text-anchor="end">−</text>
+
+      <rect class="box2" x="262" y="34" width="150" height="64" rx="4" style="fill:var(--accent-soft)"/>
+      <text class="m2" x="296" y="28" text-anchor="middle">常闭 NC</text>
+      <text class="m2" x="337" y="28" text-anchor="middle">公共端 COM</text>
+      <text class="m2" x="380" y="28" text-anchor="middle">常开 NO</text>
+      <circle cx="296" cy="64" r="11" style="fill:var(--panel);stroke:var(--fg)"/>
+      <circle cx="337" cy="64" r="11" style="fill:var(--panel);stroke:var(--fg)"/>
+      <circle cx="380" cy="64" r="11" style="fill:var(--panel);stroke:var(--fg)"/>
+      <text class="m2" x="296" y="116" text-anchor="middle">vacío</text>
+
+      <rect class="box2" x="476" y="56" width="144" height="104" rx="6"/>
+      <text class="h2s" x="490" y="80">Bomba</text>
+      <text class="t2" x="486" y="104">+</text>
+      <text class="t2" x="486" y="146">−</text>
+
+      <path class="case2" d="M170 100 H230 V140 H337 V75"/><path class="core2" style="stroke:var(--w-red)" d="M170 100 H230 V140 H337 V75"/>
+      <path class="case2" d="M380 75 V120 H446 V100 H476"/><path class="core2" style="stroke:var(--w-red)" d="M380 75 V120 H446 V100 H476"/>
+      <path class="case2" d="M170 142 H200 V196 H456 V142 H476"/><path class="core2" style="stroke:var(--w-black)" d="M170 142 H200 V196 H456 V142 H476"/>
+      <text class="m2" x="196" y="128">cable grueso</text>
+      <text class="m2" x="392" y="136">cable fino</text>
+      <text class="m2" x="300" y="212">negativo directo</text>
+    </svg>
+    </div>
+    <figcaption>El orden de los bornes es el del módulo usado. Confirmar siempre con el texto impreso en la placa: 常开 = NO, 公共端 = COM, 常闭 = NC.</figcaption>
+  </figure>
+  <div class="callout">
+    <strong>Si la bomba funciona con el LED verde apagado</strong>
+    <p>El cable de la bomba está en <b>常闭 (NC)</b>, que conduce con el relé en reposo. Pasarlo a <b>常开 (NO)</b>.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Detalle por componente</h2>
+  <div class="cards">
+    <div class="card">
+      <h3>Relé</h3>
+      <ul>
+        <li>Módulo <b>activo en bajo</b>: el firmware pone <code>HIGH</code> para apagar y <code>LOW</code> para encender (<code>RELE_ACTIVO_BAJO = true</code>).</li>
+        <li>Se alimenta del riel de <b>3V3</b>. Alimentado a 5 V, los 3,3 V del ESP32 no alcanzan para apagarlo y queda siempre activado.</li>
+        <li>LED <b>rojo</b>: módulo alimentado. LED <b>verde</b>: relé activado (la bomba recibe corriente).</li>
+        <li>Al arrancar, el firmware fija el nivel de apagado antes de configurar el pin como salida, así no hay un pulso que prenda la bomba.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>FC-28 (suelo)</h3>
+      <ul>
+        <li>Calibrado con la horquilla al aire: <code>SUELO_SECO = 4095</code>. En agua: <code>SUELO_MOJADO = 1925</code> (promedio de 4 lecturas).</li>
+        <li>Valor crudo más alto = tierra más seca; el firmware invierte la escala y publica 0–100 %.</li>
+        <li>Promedia 10 lecturas por medición porque el sensor es ruidoso.</li>
+        <li>Se corroe con el uso: recalibrar si los valores se corren.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>AM2302 (aire)</h3>
+      <ul>
+        <li>Se lee cada 5 s en segundo plano con la librería <i>DHT sensor library for ESPx</i> (beegee_tokyo).</li>
+        <li>Si falla, se conserva la última lectura buena hasta 2 minutos; después los campos se omiten de la telemetría.</li>
+        <li>Valores fuera de −40…80 °C o 0…100 % se descartan.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Alimentación y rieles</h3>
+      <ul>
+        <li>El ESP32 se alimenta por su puerto micro-USB (computadora o power bank).</li>
+        <li>Columna + <b>derecha</b>: 3V3. Alimenta FC-28, AM2302 y relé.</li>
+        <li>Columna + <b>izquierda</b>: 5V (VIN). No conectar el relé ahí.</li>
+        <li>Todas las masas (negro y marrón) unidas al GND del ESP32.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Datos que publica el nodo</h2>
+  <p class="lead">El nodo no decide el riego: mide, publica y ejecuta las órdenes del backend. Broker HiveMQ Cloud, puerto 8883 con TLS.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Topic</th><th>Sentido</th><th>Cuándo</th></tr></thead>
+    <tbody>
+      <tr><td class="pin">gda/prod/nodo1/telemetria</td><td>nodo → broker</td><td>Cada 30 s (10 min en producción)</td></tr>
+      <tr><td class="pin">gda/prod/nodo1/comando</td><td>backend → nodo</td><td>Orden de riego</td></tr>
+      <tr><td class="pin">gda/prod/nodo1/evento</td><td>nodo → broker</td><td>Cada vez que la bomba se prende o se apaga</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Campo</th><th>Qué mide</th><th>Sensor</th></tr></thead>
+    <tbody>
+      <tr><td class="pin">humedad</td><td>Humedad del <b>suelo</b>, % calibrado. Es la que usa el backend para regar.</td><td>FC-28 · GPIO 34</td></tr>
+      <tr><td class="pin">temp_ambiente</td><td>Temperatura del <b>aire</b>, °C</td><td>AM2302 · GPIO 15</td></tr>
+      <tr><td class="pin">hum_ambiente</td><td>Humedad relativa del <b>aire</b>, %</td><td>AM2302 · GPIO 15</td></tr>
+      <tr><td class="pin">bomba</td><td>Estado del relé</td><td>GPIO 27</td></tr>
+      <tr><td class="pin">rssi · ssid · ip · heap</td><td>Diagnóstico del nodo</td><td>—</td></tr>
+    </tbody>
+  </table>
+  </div>
+<pre>telemetria  {"maceta_id":1,"humedad":84,"temp_ambiente":25.9,"hum_ambiente":54.6,"bomba":false,"rssi":-41,"ssid":"UTN_LIBRE",...}
+comando     {"activar_riego":true,"duracion_seg":5,"commandId":"..."}
+evento      {"maceta_id":1,"bomba":false,"humedad":90,"motivo":"fin de riego","duracion_seg":5,"commandId":"..."}</pre>
+  <p class="lead">El nodo nunca riega más de 120 s por orden, y apaga la bomba por tiempo aunque se caiga el WiFi.</p>
+</section>
+
+<section>
+  <h2>Red, carga y logs</h2>
+  <div class="cards">
+    <div class="card">
+      <h3>WiFi</h3>
+      <ul>
+        <li>WiFiMulti con tres redes en <code>secrets.h</code>: <span class="mono">TP-Link_Extender</span>, <span class="mono">Fibertel WiFi886</span> y <span class="mono">UTN_LIBRE</span> (abierta, contraseña vacía).</li>
+        <li>Solo redes de 2,4 GHz.</li>
+        <li><code>secrets.h</code> nunca se sube al repositorio.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Carga del firmware</h3>
+      <ul>
+        <li>Placa ESP32 Dev Module, Partition Scheme <b>Minimal SPIFFS (1.9MB APP with OTA)</b>.</li>
+        <li>Por USB: mantener <b>BOOT</b> al darle a Subir hasta que empiece a escribir, y después apretar <b>EN</b>.</li>
+        <li>Por OTA: puerto de red <span class="mono">gda-nodo1</span>. En la red de la UTN no aparece porque la red aísla los dispositivos; ahí cargar por USB.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Logs</h3>
+      <ul>
+        <li>Monitor Serie a 115200 baudios.</li>
+        <li>Telnet al puerto 23 de la IP del nodo (la IP viaja en la telemetría).</li>
+        <li>Al arrancar debe verse <span class="mono">RELE: apagado | GPIO 27 = HIGH | modo activo-bajo</span>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Verificación después de armar</h2>
+  <ol class="steps">
+    <li>Con las pilas apagadas, encender el ESP32 y confirmar en el Monitor Serie la línea del relé con <span class="mono">GPIO 27 = HIGH</span>.</li>
+    <li>El LED verde del relé tiene que estar apagado.</li>
+    <li>Encender la caja de pilas: la bomba no arranca.</li>
+    <li>Publicar en <span class="mono">gda/prod/nodo1/comando</span> el mensaje <span class="mono">{"activar_riego":true,"duracion_seg":5}</span>: LED verde, clic, bomba 5 s y apagado solo.</li>
+    <li>Revisar en la telemetría que lleguen <span class="mono">humedad</span>, <span class="mono">temp_ambiente</span> y <span class="mono">hum_ambiente</span>.</li>
+    <li>Probar «Regar ahora» desde el dashboard (backend con <span class="mono">MODO_ESCRITURA=true</span> y prefijo <span class="mono">gda/prod</span>).</li>
+  </ol>
+</section>
+
+<section>
+  <h2>Problemas que ya se resolvieron</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Síntoma</th><th>Causa</th><th>Solución</th></tr></thead>
+    <tbody>
+      <tr><td>La bomba arrancaba apenas se daba corriente</td><td>El <span class="mono">setup()</span> llamaba <span class="mono">escribirRele(true)</span>, que la encendía</td><td>Cambiado a <span class="mono">escribirRele(false)</span></td></tr>
+      <tr><td>El LED verde quedaba prendido con cualquier código</td><td>Relé activo en bajo alimentado a 5 V: el HIGH de 3,3 V no lo apaga</td><td>VCC del relé al riel de 3V3</td></tr>
+      <tr><td>El pin 26 no lograba apagar el relé</td><td>Fila o pin con problemas en el protoboard</td><td>IN movido a GPIO 27</td></tr>
+      <tr><td>La bomba funcionaba con el relé en reposo</td><td>Cable de la bomba en 常闭 (NC)</td><td>Cable fino a 常开 (NO)</td></tr>
+      <tr><td><span class="mono">Wrong boot mode detected (0x13)</span> al cargar</td><td>La placa no entra sola en modo descarga</td><td>Mantener BOOT al subir</td></tr>
+      <tr><td>Humedad siempre en 0 %</td><td>Calibración de ejemplo (3500 / 1500)</td><td>Calibrado real 4095 / 1925</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<footer>Gemelo Digital Agrícola · Nodo 1 · Documento de conexiones · Firmware gda-nodo-v2.ino v2.5 · Actualizado el 29/10/2026</footer>
+
+</div>
+
+</body></html>
