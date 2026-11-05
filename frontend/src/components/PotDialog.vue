@@ -32,12 +32,32 @@
         >
           <template #prepend><q-icon name="memory" /></template>
         </q-input>
-        <q-input
-          v-model="form.plantsText" type="textarea" autogrow label="Macetas de la zona" outlined class="is-wide"
-          hint="Una por línea (opcional). Son descriptivas: el nodo mide la zona completa"
-        >
-          <template #prepend><q-icon name="local_florist" /></template>
-        </q-input>
+        <div class="is-wide gda-plants">
+          <div class="gda-plants-head">
+            <span class="gda-plants-title">Macetas de la zona</span>
+            <span class="gda-plants-count gda-mono">{{ form.plants.length }}</span>
+          </div>
+          <div class="gda-plants-add">
+            <q-input
+              v-model="newPlant" label="Nombre de la maceta" outlined class="gda-plants-name"
+              hint="Enter para agregar. Podés escribir varias separadas por coma"
+              @keydown.enter.prevent="addPlant"
+            >
+              <template #prepend><q-icon name="local_florist" /></template>
+            </q-input>
+            <q-input v-model.number="newQty" type="number" min="1" max="50" label="Cant." outlined class="gda-plants-qty" @keydown.enter.prevent="addPlant" />
+            <q-btn unelevated no-caps color="primary" icon="add" label="Agregar" class="gda-plants-btn" :disable="!newPlant.trim()" @click="addPlant" />
+          </div>
+          <transition-group name="gda-plant-pop" tag="div" class="gda-plants-chips">
+            <span v-for="g in plantGroups" :key="g.name" class="gda-plant-chip">
+              <q-icon name="local_florist" size="16px" />
+              <span>{{ g.name }}</span>
+              <b v-if="g.count > 1" class="gda-mono">×{{ g.count }}</b>
+              <button type="button" :aria-label="`Quitar ${g.name}`" @click="removePlant(g.name)"><q-icon name="close" size="14px" /></button>
+            </span>
+          </transition-group>
+          <p v-if="!form.plants.length" class="gda-plants-empty">Todavía no agregaste macetas. Son descriptivas: el nodo mide la zona completa.</p>
+        </div>
       </div>
     </section>
 
@@ -145,7 +165,7 @@
 </template>
 
 <script setup>
-import { reactive, computed, watch } from 'vue';
+import { ref, reactive, computed, watch } from 'vue';
 import AppDialog from './AppDialog.vue';
 import SegmentedControl from './SegmentedControl.vue';
 
@@ -161,7 +181,7 @@ const isEdit = computed(() => !!props.pot);
 const defaults = () => ({
   name: '',
   species: '',
-  plantsText: '',
+  plants: [],
   nodeId: '',
   minMoisture: 30,
   maxMoisture: 70,
@@ -180,6 +200,28 @@ const defaults = () => ({
 
 const form = reactive(defaults());
 
+// Macetas: se agregan de a una (o varias con coma y cantidad) y se muestran agrupadas
+const MAX_PLANTS = 60;
+const newPlant = ref('');
+const newQty = ref(1);
+const plantGroups = computed(() => {
+  const map = new Map();
+  for (const name of form.plants) map.set(name, (map.get(name) || 0) + 1);
+  return [...map].map(([name, count]) => ({ name, count }));
+});
+function addPlant() {
+  const names = newPlant.value.split(/[,\n]/).map(n => n.trim()).filter(Boolean);
+  const qty = Math.max(1, Math.min(50, Number(newQty.value) || 1));
+  for (const name of names) {
+    for (let i = 0; i < qty && form.plants.length < MAX_PLANTS; i++) form.plants.push(name);
+  }
+  newPlant.value = '';
+  newQty.value = 1;
+}
+function removePlant(name) {
+  form.plants = form.plants.filter(n => n !== name);
+}
+
 // El control de rango edita mínimo y máximo a la vez
 const moistureRange = computed({
   get: () => ({ min: form.minMoisture, max: form.maxMoisture }),
@@ -193,7 +235,7 @@ watch(() => [props.modelValue, props.pot], () => {
     Object.assign(base, {
       name: props.pot.name,
       species: props.pot.species || '',
-      plantsText: (props.pot.plants || []).map(p => p.name).join('\n'),
+      plants: (props.pot.plants || []).map(p => p.name),
       nodeId: props.pot.nodeId,
       minMoisture: props.pot.minMoisture,
       maxMoisture: props.pot.maxMoisture,
@@ -211,13 +253,15 @@ watch(() => [props.modelValue, props.pot], () => {
     });
   }
   Object.assign(form, base);
+  newPlant.value = '';
+  newQty.value = 1;
 }, { immediate: true });
 
 function submit() {
   const payload = {
     name: form.name,
     species: form.species.trim(),
-    plants: form.plantsText.split('\n').map(n => n.trim()).filter(Boolean).map(name => ({ name })),
+    plants: form.plants.map(name => ({ name })),
     minMoisture: form.minMoisture,
     maxMoisture: form.maxMoisture,
     irrigationDurationSec: form.irrigationDurationSec,
@@ -246,4 +290,35 @@ function submit() {
   margin-bottom: 18px;
 }
 .gda-range-readout b { color: var(--gda-ink); font-size: 15px; }
+
+.gda-plants { border: 1px solid var(--gda-hairline); border-radius: 12px; padding: 16px; background: #FAFCF9; }
+.gda-plants-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.gda-plants-title { font-family: var(--gda-font-display); font-weight: 700; font-size: 14.5px; color: var(--gda-ink); }
+.gda-plants-count {
+  min-width: 28px; text-align: center; padding: 2px 10px; border-radius: 999px;
+  background: var(--gda-pine); color: #fff; font-size: 12.5px; font-weight: 600;
+}
+.gda-plants-add { display: grid; grid-template-columns: minmax(0, 1fr) 84px auto; gap: 10px; align-items: start; }
+.gda-plants-btn { height: 56px; }
+.gda-plants-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.gda-plant-chip {
+  display: inline-flex; align-items: center; gap: 7px; padding: 5px 6px 5px 10px; border-radius: 999px;
+  background: var(--gda-leaf-tint); color: #24402B; font-size: 13.5px; font-weight: 500;
+}
+.gda-plant-chip .q-icon { color: var(--gda-leaf); }
+.gda-plant-chip b { font-size: 12px; padding: 0 6px; border-radius: 999px; background: rgba(62, 124, 79, 0.18); }
+.gda-plant-chip button {
+  display: grid; place-items: center; width: 22px; height: 22px; border: 0; border-radius: 50%;
+  background: transparent; color: #24402B; cursor: pointer;
+}
+.gda-plant-chip button:hover { background: rgba(31, 42, 34, 0.12); }
+.gda-plants-empty { margin: 14px 0 0; font-size: 13px; color: var(--gda-ink-soft); }
+.gda-plant-pop-enter-active { transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease; }
+.gda-plant-pop-leave-active { transition: transform 0.15s ease, opacity 0.15s ease; position: absolute; }
+.gda-plant-pop-enter-from, .gda-plant-pop-leave-to { opacity: 0; transform: scale(0.85); }
+.gda-plant-pop-move { transition: transform 0.2s ease; }
+@media (max-width: 599px) {
+  .gda-plants-add { grid-template-columns: minmax(0, 1fr) 76px; }
+  .gda-plants-btn { grid-column: 1 / -1; height: 44px; }
+}
 </style>
